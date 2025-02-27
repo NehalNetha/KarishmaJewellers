@@ -10,10 +10,13 @@ type ImageUploadProps = {
 const ImageUpload = ({ onUpload }: ImageUploadProps) => {
   const [activeTab, setActiveTab] = useState('upload');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [resultData, setResultData] = useState<any>(null);
 
   const handleDelete = () => {
     setPreviewUrl(null);
     setActiveTab('upload');
+    setResultData(null);
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -22,9 +25,48 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
       const objectUrl = URL.createObjectURL(file);
       setPreviewUrl(objectUrl);
       onUpload(file);
-      setActiveTab('annotations');
+      processImage(file);
     }
   }, [onUpload]);
+
+
+
+  const processImage = async (file: File) => {
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch('http://localhost:8080/segment', {
+        method: 'POST',
+        body: formData,
+     
+      });
+
+      if (response.ok) {
+        // Get the blob from the response
+        const blob = await response.blob();
+        
+        // Create a download link
+        const downloadUrl = URL.createObjectURL(blob);
+        setResultData({
+          downloadUrl,
+          filename: 'results.zip'
+        });
+        
+        setActiveTab('annotations');
+      } else {
+        const errorData = await response.json();
+        console.error('Error processing image:', errorData);
+        alert('Error processing image. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Error uploading image. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -33,6 +75,17 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
     },
     multiple: false
   });
+
+  const handleDownload = () => {
+    if (resultData) {
+      const link = document.createElement('a');
+      link.href = resultData.downloadUrl;
+      link.download = resultData.filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+  };
 
   return (
     <div className="bg-white rounded-xl px-10 max-w-6xl mx-auto mt-10">
@@ -85,9 +138,10 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
           <div className="flex justify-center">
             <button 
               onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
-              className="mt-6 bg-green-900 text-white py-2 px-6 rounded-md w-32 text-lg font-medium hover:bg-green-800 transition-colors"
+              className="mt-6 bg-green-900 text-white py-2 px-6 rounded-md min-w-[128px] text-lg font-medium hover:bg-green-800 transition-colors"
+              disabled={isLoading}
             >
-              Upload
+              {isLoading ? "Processing..." : "Upload"}
             </button>
           </div>
         </div>
@@ -101,18 +155,33 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
           
           <div className="border-2 border-dashed border-gray-300 rounded-2xl p-12 flex flex-col items-center justify-between h-64">
             <div className="flex-1 flex items-center justify-center">
-              <Image
-                src="/karishmaGray.svg"
-                alt="Logo"
-                width={200}
-                height={200}
-                className="object-contain "
-              />
+              {resultData ? (
+                <div className="text-center">
+                  <p className="text-green-900 font-medium mb-4">Processing complete!</p>
+                  <p className="text-gray-600">Your results are ready to download</p>
+                </div>
+              ) : (
+                <Image
+                  src="/karishmaGray.svg"
+                  alt="Logo"
+                  width={200}
+                  height={200}
+                  className="object-contain"
+                />
+              )}
             </div>
           </div>
           
           <div className="flex justify-center items-center">
-            <button className="mt-6 bg-green-900 text-white py-2 px-6 rounded-md  text-lg items-center font-medium hover:bg-green-800 transition-colors">
+            <button 
+              className={`mt-6 py-2 px-6 rounded-md text-lg items-center font-medium transition-colors ${
+                resultData 
+                  ? "bg-green-900 text-white hover:bg-green-800" 
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
+              }`}
+              onClick={handleDownload}
+              disabled={!resultData}
+            >
               Download
             </button>
           </div>
