@@ -43,7 +43,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
         const formData = new FormData();
         formData.append('image', file);
   
-        const response = await fetch('http://localhost:8080/segment', {
+        const response = await fetch('http://13.235.132.94/segment', {
           method: 'POST',
           body: formData,
         });
