@@ -11,6 +11,9 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
   const [activeTab, setActiveTab] = useState('upload');
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [analysisData, setAnalysisData] = useState<any>(null);
+  const [segmentedImage, setSegmentedImage] = useState<string | null>(null);
+  const [zipFile, setZipFile] = useState<any>(null);
   const [resultData, setResultData] = useState<any>(null);
 
   const handleDelete = () => {
@@ -31,41 +34,37 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
 
 
 
+  // Add new state variables after the existing ones
+  
+  // Update the processImage function
   const processImage = async (file: File) => {
-    setIsLoading(true);
-    try {
-      const formData = new FormData();
-      formData.append('image', file);
-
-      const response = await fetch('http://localhost:8080/segment', {
-        method: 'POST',
-        body: formData,
-     
-      });
-
-      if (response.ok) {
-        // Get the blob from the response
-        const blob = await response.blob();
-        
-        // Create a download link
-        const downloadUrl = URL.createObjectURL(blob);
-        setResultData({
-          downloadUrl,
-          filename: 'results.zip'
+      setIsLoading(true);
+      try {
+        const formData = new FormData();
+        formData.append('image', file);
+  
+        const response = await fetch('http://localhost:8080/segment', {
+          method: 'POST',
+          body: formData,
         });
-        
-        setActiveTab('annotations');
-      } else {
-        const errorData = await response.json();
-        console.error('Error processing image:', errorData);
-        alert('Error processing image. Please try again.');
+  
+        if (response.ok) {
+          const data = await response.json();
+          setAnalysisData(data.analysis);
+          setSegmentedImage(data.segmentedImage);
+          setZipFile(data.zipFile);  // Add this line
+          setActiveTab('annotations');
+        } else {
+          const errorData = await response.json();
+          console.error('Error processing image:', errorData);
+          alert('Error processing image. Please try again.');
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        alert('Error uploading image. Please try again.');
+      } finally {
+        setIsLoading(false);
       }
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      alert('Error uploading image. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -77,10 +76,10 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
   });
 
   const handleDownload = () => {
-    if (resultData) {
+    if (zipFile) {
       const link = document.createElement('a');
-      link.href = resultData.downloadUrl;
-      link.download = resultData.filename;
+      link.href = zipFile.data;
+      link.download = zipFile.filename;
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -115,7 +114,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
                   alt="Preview"
                   width={200}
                   height={200}
-                  className="object-contain max-h-40"
+                  className="object-contain max-h-40 rounded-lg"
                 />
               </div>
             ) : (
@@ -146,47 +145,61 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
           </div>
         </div>
         
-        {/* Right section */}
-        <div>
-          <h2 className="text-3xl font-bold mb-3">Annotated Jewellery</h2>
-          <p className="text-gray-600 mb-8 text-lg">
-            The provided image includes annotations for various components.
-          </p>
-          
-          <div className="border-2 border-dashed border-gray-300 rounded-2xl p-12 flex flex-col items-center justify-between h-64">
-            <div className="flex-1 flex items-center justify-center">
-              {resultData ? (
-                <div className="text-center">
-                  <p className="text-green-900 font-medium mb-4">Processing complete!</p>
-                  <p className="text-gray-600">Your results are ready to download</p>
+        
+
+{/* Right section */}
+      <div>
+        <h2 className="text-3xl font-bold mb-3">Annotated Jewellery</h2>
+        <p className="text-gray-600 mb-8 text-lg">
+          The provided image includes annotations for various components.
+        </p>
+        
+        <div className="border-2 border-dashed border-gray-300 rounded-2xl p-12 flex flex-col items-center justify-between min-h-[400px]">
+          <div className="flex-1 flex flex-col items-center justify-center w-full">
+            {segmentedImage ? (
+              <>
+                <div className="relative w-full max-w-md mb-6">
+                  {/* Fix the Image component to properly handle base64 images */}
+                  <img 
+                    src={segmentedImage}
+                    alt="Segmented Image"
+                    className="w-full h-auto rounded-lg"
+                  />
                 </div>
-              ) : (
-                <Image
-                  src="/karishmaGray.svg"
-                  alt="Logo"
-                  width={200}
-                  height={200}
-                  className="object-contain"
-                />
-              )}
-            </div>
-          </div>
-          
-          <div className="flex justify-center items-center">
-            <button 
-              className={`mt-6 py-2 px-6 rounded-md text-lg items-center font-medium transition-colors ${
-                resultData 
-                  ? "bg-green-900 text-white hover:bg-green-800" 
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
-              onClick={handleDownload}
-              disabled={!resultData}
-            >
-              Download
-            </button>
+                {analysisData && (
+                  <div className="text-center mt-4">
+                    <p className="text-green-900 font-medium mb-2">{analysisData.message}</p>
+                    <div className="text-gray-600">
+                      {Object.entries(analysisData.components).map(([key, value]) => (
+                        <p key={key} className="mb-1">
+                          {key}: {String(value)}
+                        </p>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                 <button
+                onClick={handleDownload}
+                className="mt-6 bg-green-900 text-white py-2 px-6 rounded-md text-lg font-medium hover:bg-green-800 transition-colors"
+              >
+                Download Components
+              </button>
+              </>
+            ) : (
+              <Image
+                src="/karishmaGray.svg"
+                alt="Logo"
+                width={200}
+                height={200}
+                className="object-contain"
+              />
+            )}
           </div>
         </div>
       </div>
+      </div>
+
+
       
       {/* Progress Steps */}
       <div className="mt-12 flex justify-center items-center">
