@@ -41,7 +41,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
       const formData = new FormData();
       formData.append('image', file);
 
-      const response = await fetch('http://13.235.132.94/flask/segment', {
+      const response = await fetch('http://localhost:8080/segment', {
         method: 'POST',
         body: formData,
       });
@@ -50,7 +50,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
         const data = await response.json();
         setAnalysisData(data.analysis);
         setSegmentedImage(data.segmentedImage);
-        setComponentImages(data.componentImages);  // Set component images
+        setComponentImages(data.componentImages);  // Now contains one image per category
         setZipFile(data.zipFile);
         setActiveTab('annotations');
       } else {
@@ -164,25 +164,25 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
                     />
                   </div>
 
-                  {/* Component Images */}
+                  {/* Component Images (One per Category) */}
                   <div className="w-full max-w-md mb-6">
-                    <h3 className="text-xl font-semibold mb-4 text-center">Component Details</h3>
+                    <h3 className="text-xl font-semibold mb-4 text-center">Component Categories</h3>
                     <div className="max-h-[300px] overflow-y-auto pr-2">
                       <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
-                        {Object.entries(componentImages).map(([filename, src]) => (
+                        {Object.entries(componentImages).map(([label, src]) => (
                           <div 
-                            key={filename} 
+                            key={label} 
                             className="flex flex-col items-center bg-gray-50 rounded-lg p-3 hover:shadow-md transition-shadow"
                           >
                             <div className="w-full aspect-square relative">
                               <img 
                                 src={src}
-                                alt={filename}
+                                alt={label}
                                 className="w-full h-full object-contain rounded-lg"
                               />
                             </div>
                             <p className="text-gray-600 text-sm mt-2 text-center font-medium">
-                              {filename.split('.')[0].replace(/_/g, ' ')}
+                              {label.replace(/_/g, ' ')} ({analysisData?.components[label] || 0})
                             </p>
                           </div>
                         ))}
@@ -194,13 +194,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
                   {analysisData && (
                     <div className="text-center mt-4">
                       <p className="text-green-900 font-medium mb-2">{analysisData.message}</p>
-                      <div className="text-gray-600">
-                        {Object.entries(analysisData.components).map(([key, value]) => (
-                          <p key={key} className="mb-1">
-                            {key}: {String(value)}
-                          </p>
-                        ))}
-                      </div>
+                      {/* Optionally remove detailed list here since it's shown with images */}
                     </div>
                   )}
 
@@ -209,7 +203,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
                     onClick={handleDownload}
                     className="mt-6 bg-green-900 text-white py-2 px-6 rounded-md text-lg font-medium hover:bg-green-800 transition-colors"
                   >
-                    Download Components
+                    Download All Components
                   </button>
                 </>
               ) : (

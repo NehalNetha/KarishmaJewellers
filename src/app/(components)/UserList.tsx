@@ -5,6 +5,7 @@ import { Plus, X } from 'lucide-react';
 import AddUserModal from './AddUserModal';
 import React, { useState, useEffect } from 'react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
+import toast from 'react-hot-toast';
 
 type User = {
   id: string;
@@ -61,12 +62,23 @@ const UserList = () => {
   };
 
   const handleDeleteUser = async (userId: string) => {
+    if (!confirm('Are you sure you want to delete this user?')) return;
+    
     try {
-      const { error } = await supabase.auth.admin.deleteUser(userId);
-      if (error) throw error;
+      const response = await fetch(`/api/users/${userId}`, {
+        method: 'DELETE',
+      });
+      
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || 'Failed to delete user');
+      }
+    
       setUsers(prev => prev.filter(user => user.id !== userId));
+      toast.success('User deleted successfully');
     } catch (error) {
       console.error('Error deleting user:', error);
+      toast.error('Failed to delete user');
     }
   };
 

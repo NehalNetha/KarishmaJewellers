@@ -25,19 +25,21 @@ function Nav() {
   const pathname = usePathname()
   const router = useRouter()
   const [userName, setUserName] = useState<string>('')
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [isNavVisible, setIsNavVisible] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
 
   const supabase = getSupabaseBrowserClient()
 
   useEffect(() => {
-    const getUserName = async () => {
+    const getUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser()
-      if (user?.email) {
-        setUserName(user.email.split('@')[0])
+      if (user) {
+        setUserName(user.email?.split('@')[0] || '')
+        setAvatarUrl(user.user_metadata?.avatar_url || null)
       }
     }
-    getUserName()
+    getUserData()
     
     setIsNavVisible(true)
   }, [])
@@ -50,7 +52,6 @@ function Nav() {
     }
   };
 
-  // Add this function to handle link clicks
   const handleLinkClick = () => {
     setIsMobileMenuOpen(false)
   }
@@ -158,7 +159,7 @@ function Nav() {
                     ? 'bg-white text-[#073320]' 
                     : 'hover:bg-[#0a4a2e]'
                 }`}
-                onClick={handleLinkClick} // Add this line
+                onClick={handleLinkClick}
               >
                 <motion.div
                   animate={pathname === item.href ? { 
@@ -181,7 +182,17 @@ function Nav() {
                 variants={itemVariants}
                 whileHover={{ scale: 1.05 }}
               >
-                <User size={20} />
+                {avatarUrl ? (
+                  <Image
+                    src={avatarUrl}
+                    alt="Profile"
+                    width={20}
+                    height={20}
+                    className="rounded-full object-cover"
+                  />
+                ) : (
+                  <User size={20} />
+                )}
                 <span>{userName}</span>
               </motion.div>
             )}
