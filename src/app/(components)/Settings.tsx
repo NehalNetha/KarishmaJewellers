@@ -1,46 +1,49 @@
-"use client"
+"use client";
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Pencil, Trash2, ImageIcon, Lock, Bell, Shield } from 'lucide-react';
+import { Pencil, Trash2, ImageIcon, Lock } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
+import { useUser } from './UserContext';
 
-const Settings = () => {
+interface FormData {
+  name: string;
+  surname: string;
+  email: string;
+  avatar_url: string;
+}
+
+interface PasswordData {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+const Settings: React.FC = () => {
+  const { userData, setUserData } = useUser();
   const [loading, setLoading] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     surname: '',
     email: '',
-    avatar_url: ''
+    avatar_url: '',
   });
   const supabase = getSupabaseBrowserClient();
-  
-  useEffect(() => {
-    fetchUserProfile();
-  }, []);
 
-  const fetchUserProfile = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setFormData({
-          name: user.user_metadata?.name || '',
-          surname: user.user_metadata?.surname || '',
-          email: user.email || '',
-          avatar_url: user.user_metadata?.avatar_url || ''
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-      toast.error('Failed to load profile');
-    }
-  };
+  useEffect(() => {
+    setFormData({
+      name: userData.name,
+      surname: userData.surname,
+      email: userData.email,
+      avatar_url: userData.avatarUrl || '',
+    });
+  }, [userData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [e.target.name]: e.target.value
+      [e.target.name]: e.target.value,
     }));
   };
 
@@ -48,12 +51,11 @@ const Settings = () => {
     const file = e.target.files?.[0];
     if (file) {
       setAvatarFile(file);
-      // Preview the image
       const reader = new FileReader();
       reader.onload = () => {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
-          avatar_url: reader.result as string
+          avatar_url: reader.result as string,
         }));
       };
       reader.readAsDataURL(file);
@@ -63,30 +65,32 @@ const Settings = () => {
   const handleSubmit = async () => {
     setLoading(true);
     try {
-      const submitData = new FormData();
-      submitData.append('name', formData.name);
-      submitData.append('surname', formData.surname);
-      submitData.append('email', formData.email);
-      submitData.append('avatar_url', formData.avatar_url);
+      let avatarUrl = formData.avatar_url;
       if (avatarFile) {
-        submitData.append('avatar', avatarFile);
+        const { data: fileData, error: uploadError } = await supabase.storage
+          .from('avatars')
+          .upload(`${Date.now()}_${avatarFile.name}`, avatarFile);
+        if (uploadError) throw uploadError;
+
+        avatarUrl = supabase.storage.from('avatars').getPublicUrl(fileData.path).data.publicUrl;
       }
 
-      const response = await fetch('/api/settings', {
-        method: 'PUT',
-        body: submitData
+      const { error } = await supabase.auth.updateUser({
+        data: {
+          name: formData.name,
+          surname: formData.surname,
+          avatar_url: avatarUrl,
+        },
       });
+      if (error) throw error;
 
-      if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.error);
-      }
-
-      const data = await response.json();
-      setFormData(prev => ({
+      setUserData((prev) => ({
         ...prev,
-        avatar_url: data.avatar_url || prev.avatar_url
+        name: formData.name,
+        surname: formData.surname,
+        avatarUrl: avatarUrl,
       }));
+      setFormData((prev) => ({ ...prev, avatar_url: avatarUrl }));
       setAvatarFile(null);
       toast.success('Profile updated successfully');
     } catch (error) {
@@ -98,15 +102,16 @@ const Settings = () => {
   };
 
   const handleRemoveAvatar = () => {
-    setFormData(prev => ({ ...prev, avatar_url: '' }));
+    setFormData((prev) => ({ ...prev, avatar_url: '' }));
     setAvatarFile(null);
+    setUserData((prev) => ({ ...prev, avatarUrl: null }));
   };
 
   const [showPasswordSection, setShowPasswordSection] = useState(false);
-  const [passwordData, setPasswordData] = useState({
+  const [passwordData, setPasswordData] = useState<PasswordData>({
     currentPassword: '',
     newPassword: '',
-    confirmPassword: ''
+    confirmPassword: '',
   });
 
   const handlePasswordChange = async () => {
@@ -114,20 +119,20 @@ const Settings = () => {
       toast.error('New passwords do not match');
       return;
     }
-    
+
     setLoading(true);
     try {
       const { error } = await supabase.auth.updateUser({
-        password: passwordData.newPassword
+        password: passwordData.newPassword,
       });
-      
+
       if (error) throw error;
-      
+
       toast.success('Password updated successfully');
       setPasswordData({
         currentPassword: '',
         newPassword: '',
-        confirmPassword: ''
+        confirmPassword: '',
       });
       setShowPasswordSection(false);
     } catch (error) {
@@ -148,7 +153,7 @@ const Settings = () => {
             <h2 className="text-xl font-semibold">Profile</h2>
             <p className="text-gray-500 mt-2">Set your account details</p>
           </div>
-          
+
           <div className="flex-1">
             <div className="grid grid-cols-1 lg:grid-cols-[2fr,1fr] gap-8">
               <div className="space-y-6">
@@ -223,7 +228,7 @@ const Settings = () => {
                       <Pencil size={16} /> Edit photo
                     </label>
                     {formData.avatar_url && (
-                      <button 
+                      <button
                         className="text-sm text-red-500 flex items-center gap-1 hover:text-red-700 transition-colors"
                         onClick={handleRemoveAvatar}
                       >
@@ -238,13 +243,20 @@ const Settings = () => {
         </div>
 
         <div className="flex justify-end gap-4 pt-4">
-          <button 
+          <button
             className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            onClick={fetchUserProfile}
+            onClick={() =>
+              setFormData({
+                name: userData.name,
+                surname: userData.surname,
+                email: userData.email,
+                avatar_url: userData.avatarUrl || '',
+              })
+            }
           >
             Cancel
           </button>
-          <button 
+          <button
             className="px-6 py-2 bg-[#073320] text-white rounded-md hover:bg-[#052616] transition-colors disabled:opacity-50"
             onClick={handleSubmit}
             disabled={loading}
@@ -253,7 +265,7 @@ const Settings = () => {
           </button>
         </div>
       </div>
-      {/* Password Section */}
+
       <div className="space-y-8 mt-12 border-t pt-12">
         <div className="flex gap-16">
           <div className="w-1/4">
@@ -263,7 +275,7 @@ const Settings = () => {
             </h2>
             <p className="text-gray-500 mt-2">Manage your security preferences</p>
           </div>
-          
+
           <div className="flex-1">
             <button
               onClick={() => setShowPasswordSection(!showPasswordSection)}
@@ -279,10 +291,12 @@ const Settings = () => {
                   <input
                     type="password"
                     value={passwordData.currentPassword}
-                    onChange={(e) => setPasswordData(prev => ({
-                      ...prev,
-                      currentPassword: e.target.value
-                    }))}
+                    onChange={(e) =>
+                      setPasswordData((prev) => ({
+                        ...prev,
+                        currentPassword: e.target.value,
+                      }))
+                    }
                     className="w-full p-2 border rounded-md border-gray-300 focus:border-[#073320] focus:ring-1 focus:ring-[#073320] outline-none"
                   />
                 </div>
@@ -291,10 +305,12 @@ const Settings = () => {
                   <input
                     type="password"
                     value={passwordData.newPassword}
-                    onChange={(e) => setPasswordData(prev => ({
-                      ...prev,
-                      newPassword: e.target.value
-                    }))}
+                    onChange={(e) =>
+                      setPasswordData((prev) => ({
+                        ...prev,
+                        newPassword: e.target.value,
+                      }))
+                    }
                     className="w-full p-2 border rounded-md border-gray-300 focus:border-[#073320] focus:ring-1 focus:ring-[#073320] outline-none"
                   />
                 </div>
@@ -303,10 +319,12 @@ const Settings = () => {
                   <input
                     type="password"
                     value={passwordData.confirmPassword}
-                    onChange={(e) => setPasswordData(prev => ({
-                      ...prev,
-                      confirmPassword: e.target.value
-                    }))}
+                    onChange={(e) =>
+                      setPasswordData((prev) => ({
+                        ...prev,
+                        confirmPassword: e.target.value,
+                      }))
+                    }
                     className="w-full p-2 border rounded-md border-gray-300 focus:border-[#073320] focus:ring-1 focus:ring-[#073320] outline-none"
                   />
                 </div>
@@ -322,27 +340,7 @@ const Settings = () => {
           </div>
         </div>
       </div>
-
-     
-
-  
-
-      <div className="flex justify-end gap-4 pt-4">
-          <button 
-            className="px-6 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
-            onClick={fetchUserProfile}
-          >
-            Cancel
-          </button>
-          <button 
-            className="px-6 py-2 bg-[#073320] text-white rounded-md hover:bg-[#052616] transition-colors disabled:opacity-50"
-            onClick={handleSubmit}
-            disabled={loading}
-          >
-            {loading ? 'Saving...' : 'Save Changes'}
-          </button>
-        </div>
-      </div>
+    </div>
   );
 };
 
