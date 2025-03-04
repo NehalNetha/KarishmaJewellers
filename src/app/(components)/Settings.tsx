@@ -325,32 +325,7 @@ const Settings = () => {
 
      
 
-      {/* Account Management Section */}
-      <div className="space-y-8 mt-12 border-t pt-12">
-        <div className="flex gap-16">
-          <div className="w-1/4">
-            <h2 className="text-xl font-semibold flex items-center gap-2">
-              <Shield size={20} />
-              Account
-            </h2>
-            <p className="text-gray-500 mt-2">Manage your account preferences</p>
-          </div>
-          
-          <div className="flex-1">
-            <button
-              className="text-red-500 hover:text-red-700 font-medium"
-              onClick={() => {
-                // Add delete account logic
-                if (window.confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-                  // Handle account deletion
-                }
-              }}
-            >
-              Delete Account
-            </button>
-          </div>
-        </div>
-      </div>
+  
 
       <div className="flex justify-end gap-4 pt-4">
           <button 

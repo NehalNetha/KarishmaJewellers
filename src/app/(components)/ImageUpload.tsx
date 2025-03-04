@@ -95,7 +95,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
             Upload a jewellery image, and our AI will count the jewels instantly.
           </p>
           
-          <div {...getRootProps()} className="border-2 border-dashed border-gray-300 rounded-2xl p-12 flex flex-col items-center justify-center h-64 cursor-pointer hover:border-green-900 transition-colors">
+          <div {...getRootProps()} className="border-2 border-dashed border-gray-300 rounded-2xl px-12 flex flex-col items-center justify-center min-h-[400px] cursor-pointer hover:border-green-900 transition-colors">
             <input {...getInputProps()} />
             {previewUrl ? (
               <div className="relative">
@@ -111,9 +111,9 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
                 <Image 
                   src={previewUrl}
                   alt="Preview"
-                  width={200}
-                  height={200}
-                  className="object-contain max-h-40 rounded-lg"
+                  width={400}
+                  height={400}
+                  className="object-contain max-h-[500px] rounded-lg"
                 />
               </div>
             ) : (
@@ -121,11 +121,11 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
                 <Image 
                   src="/Cloud.svg" 
                   alt="Logo" 
-                  width={200} 
-                  height={200}
+                  width={250}
+                  height={250}
                   className="object-contain"
                 />
-                <p className="text-gray-700 text-lg">
+                <p className="text-gray-700 text-lg mt-4">
                   {isDragActive ? "Drop the image here" : "Drop your image here, or "} 
                   <span className="text-green-900 font-medium">browse</span>
                 </p>
