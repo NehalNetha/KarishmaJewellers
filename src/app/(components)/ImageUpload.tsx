@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import React, { useState, useCallback } from 'react';
-import { CircleCheck, X } from 'lucide-react';  // Add X icon import
+import { CircleCheck, X } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 
 type ImageUploadProps = {
@@ -13,13 +13,16 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
   const [isLoading, setIsLoading] = useState(false);
   const [analysisData, setAnalysisData] = useState<any>(null);
   const [segmentedImage, setSegmentedImage] = useState<string | null>(null);
+  const [componentImages, setComponentImages] = useState<Record<string, string>>({});
   const [zipFile, setZipFile] = useState<any>(null);
-  const [resultData, setResultData] = useState<any>(null);
 
   const handleDelete = () => {
     setPreviewUrl(null);
     setActiveTab('upload');
-    setResultData(null);
+    setAnalysisData(null);
+    setSegmentedImage(null);
+    setComponentImages({});
+    setZipFile(null);
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -32,39 +35,35 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
     }
   }, [onUpload]);
 
-
-
-  // Add new state variables after the existing ones
-  
-  // Update the processImage function
   const processImage = async (file: File) => {
-      setIsLoading(true);
-      try {
-        const formData = new FormData();
-        formData.append('image', file);
-  
-        const response = await fetch('http://13.235.132.94/segment', {
-          method: 'POST',
-          body: formData,
-        });
-  
-        if (response.ok) {
-          const data = await response.json();
-          setAnalysisData(data.analysis);
-          setSegmentedImage(data.segmentedImage);
-          setZipFile(data.zipFile);  // Add this line
-          setActiveTab('annotations');
-        } else {
-          const errorData = await response.json();
-          console.error('Error processing image:', errorData);
-          alert('Error processing image. Please try again.');
-        }
-      } catch (error) {
-        console.error('Error uploading image:', error);
-        alert('Error uploading image. Please try again.');
-      } finally {
-        setIsLoading(false);
+    setIsLoading(true);
+    try {
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch('http://13.235.132.94/flask/segment', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setAnalysisData(data.analysis);
+        setSegmentedImage(data.segmentedImage);
+        setComponentImages(data.componentImages);  // Set component images
+        setZipFile(data.zipFile);
+        setActiveTab('annotations');
+      } else {
+        const errorData = await response.json();
+        console.error('Error processing image:', errorData);
+        alert('Error processing image. Please try again.');
       }
+    } catch (error) {
+      console.error('Error uploading image:', error);
+      alert('Error uploading image. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -120,7 +119,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
             ) : (
               <>
                 <Image 
-                  src="/cloud.svg" 
+                  src="/Cloud.svg" 
                   alt="Logo" 
                   width={200} 
                   height={200}
@@ -144,63 +143,89 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
             </button>
           </div>
         </div>
-        
-        
 
-{/* Right section */}
-      <div>
-        <h2 className="text-3xl font-bold mb-3">Annotated Jewellery</h2>
-        <p className="text-gray-600 mb-8 text-lg">
-          The provided image includes annotations for various components.
-        </p>
-        
-        <div className="border-2 border-dashed border-gray-300 rounded-2xl p-12 flex flex-col items-center justify-between min-h-[400px]">
-          <div className="flex-1 flex flex-col items-center justify-center w-full">
-            {segmentedImage ? (
-              <>
-                <div className="relative w-full max-w-md mb-6">
-                  {/* Fix the Image component to properly handle base64 images */}
-                  <img 
-                    src={segmentedImage}
-                    alt="Segmented Image"
-                    className="w-full h-auto rounded-lg"
-                  />
-                </div>
-                {analysisData && (
-                  <div className="text-center mt-4">
-                    <p className="text-green-900 font-medium mb-2">{analysisData.message}</p>
-                    <div className="text-gray-600">
-                      {Object.entries(analysisData.components).map(([key, value]) => (
-                        <p key={key} className="mb-1">
-                          {key}: {String(value)}
-                        </p>
-                      ))}
+        {/* Right section */}
+        <div>
+          <h2 className="text-3xl font-bold mb-3">Annotated Jewellery</h2>
+          <p className="text-gray-600 mb-8 text-lg">
+            The provided image includes annotations for various components.
+          </p>
+          
+          <div className="border-2 border-dashed border-gray-300 rounded-2xl p-12 flex flex-col items-center justify-between min-h-[400px]">
+            <div className="flex-1 flex flex-col items-center justify-center w-full">
+              {segmentedImage ? (
+                <>
+                  {/* Segmented Image */}
+                  <div className="relative w-full max-w-md mb-6">
+                    <img 
+                      src={segmentedImage}
+                      alt="Segmented Image"
+                      className="w-full h-auto rounded-lg"
+                    />
+                  </div>
+
+                  {/* Component Images */}
+                  <div className="w-full max-w-md mb-6">
+                    <h3 className="text-xl font-semibold mb-4 text-center">Component Details</h3>
+                    <div className="max-h-[300px] overflow-y-auto pr-2">
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                        {Object.entries(componentImages).map(([filename, src]) => (
+                          <div 
+                            key={filename} 
+                            className="flex flex-col items-center bg-gray-50 rounded-lg p-3 hover:shadow-md transition-shadow"
+                          >
+                            <div className="w-full aspect-square relative">
+                              <img 
+                                src={src}
+                                alt={filename}
+                                className="w-full h-full object-contain rounded-lg"
+                              />
+                            </div>
+                            <p className="text-gray-600 text-sm mt-2 text-center font-medium">
+                              {filename.split('.')[0].replace(/_/g, ' ')}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   </div>
-                )}
-                 <button
-                onClick={handleDownload}
-                className="mt-6 bg-green-900 text-white py-2 px-6 rounded-md text-lg font-medium hover:bg-green-800 transition-colors"
-              >
-                Download Components
-              </button>
-              </>
-            ) : (
-              <Image
-                src="/karishmaGray.svg"
-                alt="Logo"
-                width={200}
-                height={200}
-                className="object-contain"
-              />
-            )}
+                  
+                  {/* Analysis Data */}
+                  {analysisData && (
+                    <div className="text-center mt-4">
+                      <p className="text-green-900 font-medium mb-2">{analysisData.message}</p>
+                      <div className="text-gray-600">
+                        {Object.entries(analysisData.components).map(([key, value]) => (
+                          <p key={key} className="mb-1">
+                            {key}: {String(value)}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Download Button */}
+                  <button
+                    onClick={handleDownload}
+                    className="mt-6 bg-green-900 text-white py-2 px-6 rounded-md text-lg font-medium hover:bg-green-800 transition-colors"
+                  >
+                    Download Components
+                  </button>
+                </>
+              ) : (
+                <Image
+                  src="/karishmaGray.svg"
+                  alt="Logo"
+                  width={200}
+                  height={200}
+                  className="object-contain"
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>
-      </div>
 
-
-      
       {/* Progress Steps */}
       <div className="mt-12 flex justify-center items-center">
         <div className="flex items-center gap-3">

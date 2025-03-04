@@ -16,7 +16,6 @@ function Page() {
   const isAboutInView = useInView(aboutRef, { once: true, margin: "-100px 0px" })
   const isCtaInView = useInView(ctaRef, { once: true, margin: "-100px 0px" })
   
-  // Parallax effect for hero section
   const { scrollY } = useScroll()
   const heroY = useTransform(scrollY, [0, 500], [0, -100])
   const heroOpacity = useTransform(scrollY, [0, 300], [1, 0.5])
@@ -36,12 +35,12 @@ function Page() {
   }
   
   const slideIn = {
-    hidden: { opacity: 0, x: -50 },
+    hidden: { opacity: 0, x: -30 }, // Reduced x movement to prevent overflow
     visible: { opacity: 1, x: 0 }
   }
   
   const slideInRight = {
-    hidden: { opacity: 0, x: 50 },
+    hidden: { opacity: 0, x: 30 }, // Reduced x movement
     visible: { opacity: 1, x: 0 }
   }
   
@@ -51,23 +50,23 @@ function Page() {
   }
 
   return (
-    <div className="min-h-screen bg-white overflow-x-hidden">
+    <div className="min-h-screen bg-white overflow-x-hidden w-full">
       {/* Hero Section */}
       <motion.div 
         ref={heroRef}
-        className="bg-gradient-to-b from-green-50 to-white py-20 px-4 relative"
+        className="bg-gradient-to-b from-green-50 to-white py-12 sm:py-20 px-4 relative w-full overflow-hidden" // Added overflow-hidden
         initial="hidden"
         animate={isLoaded ? "visible" : "hidden"}
         variants={staggerChildren}
         transition={{ staggerChildren: 0.2 }}
         style={{ y: heroY, opacity: heroOpacity }}
       >
-        {/* Animated background elements */}
+        {/* Animated background elements - Contained within parent */}
         <motion.div 
-          className="absolute top-20 left-10 w-20 h-20 rounded-full bg-green-100 opacity-30"
+          className="absolute top-20 left-4 sm:left-10 w-20 h-20 rounded-full bg-green-100 opacity-30"
           animate={{ 
-            x: [0, 20, 0], 
-            y: [0, 30, 0],
+            x: [0, 10, 0], // Reduced movement range
+            y: [0, 20, 0],
             scale: [1, 1.2, 1]
           }}
           transition={{ 
@@ -77,10 +76,10 @@ function Page() {
           }}
         />
         <motion.div 
-          className="absolute bottom-20 right-10 w-32 h-32 rounded-full bg-green-100 opacity-20"
+          className="absolute bottom-20 right-4 sm:right-10 w-24 h-24 rounded-full bg-green-100 opacity-20" // Reduced size
           animate={{ 
-            x: [0, -30, 0], 
-            y: [0, -20, 0],
+            x: [0, -10, 0], // Reduced movement range
+            y: [0, -15, 0],
             scale: [1, 1.1, 1]
           }}
           transition={{ 
@@ -90,9 +89,9 @@ function Page() {
           }}
         />
         
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-6xl mx-auto w-full px-4 sm:px-6">
           <motion.div 
-            className="flex flex-col items-center text-center mb-12"
+            className="flex flex-col items-center text-center mb-8 sm:mb-12"
             variants={fadeIn}
             transition={{ duration: 0.6 }}
           >
@@ -103,20 +102,20 @@ function Page() {
               <Image 
                 src="/karishmaGray.svg" 
                 alt="Karishma Jewellery Logo" 
-                width={180} 
-                height={180} 
-                className="mb-8"
+                width={140} 
+                height={140} 
+                className="mb-6 sm:mb-8 w-32 sm:w-44" // Responsive width
               />
             </motion.div>
             <motion.h1 
-              className="text-5xl font-bold text-green-900 mb-6"
+              className="text-2xl sm:text-4xl md:text-5xl font-bold text-green-900 mb-4 sm:mb-6"
               variants={popUp}
               transition={{ duration: 0.7 }}
             >
               Karishma Jewellery
             </motion.h1>
             <motion.p 
-              className="text-xl text-gray-600 max-w-2xl"
+              className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl px-4"
               variants={fadeIn}
               transition={{ duration: 0.8, delay: 0.3 }}
             >
@@ -133,7 +132,7 @@ function Page() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Link href="/annotation" className="bg-green-900 text-white py-3 px-8 rounded-md text-lg font-medium hover:bg-green-800 transition-colors">
+              <Link href="/annotation" className="bg-green-900 text-white py-2 sm:py-3 px-6 sm:px-8 rounded-md text-base sm:text-lg font-medium hover:bg-green-800 transition-colors">
                 Try Jewel Detection
               </Link>
             </motion.div>
@@ -142,10 +141,10 @@ function Page() {
       </motion.div>
 
       {/* Features Section */}
-      <div className="py-20 px-4" ref={featuresRef}>
-        <div className="max-w-6xl mx-auto">
+      <div className="py-12 sm:py-20 px-4 w-full" ref={featuresRef}>
+        <div className="max-w-6xl mx-auto w-full px-4 sm:px-6">
           <motion.h2 
-            className="text-3xl font-bold text-center mb-16 text-green-900"
+            className="text-xl sm:text-2xl md:text-3xl font-bold text-center mb-10 sm:mb-16 text-green-900"
             initial={{ opacity: 0, y: 30 }}
             animate={isFeaturesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 30 }}
             transition={{ duration: 0.7 }}
@@ -153,7 +152,7 @@ function Page() {
             How It Works
           </motion.h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
             {[
               {
                 title: "Upload Image",
@@ -173,7 +172,7 @@ function Page() {
             ].map((feature, index) => (
               <motion.div 
                 key={index}
-                className="bg-white rounded-xl p-8 shadow-sm border border-gray-100 flex flex-col items-center text-center"
+                className="bg-white rounded-xl p-6 shadow-sm border border-gray-100 flex flex-col items-center text-center"
                 initial={{ opacity: 0, y: 50 }}
                 animate={isFeaturesInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 50 }}
                 transition={{ duration: 0.5, delay: 0.2 + (index * 0.2) }}
@@ -184,7 +183,7 @@ function Page() {
                 }}
               >
                 <motion.div 
-                  className="bg-green-50 p-4 rounded-full mb-6"
+                  className="bg-green-50 p-3 sm:p-4 rounded-full mb-4 sm:mb-6"
                   whileHover={{ scale: 1.1, rotate: 5 }}
                   transition={{ type: "spring", stiffness: 300 }}
                 >
@@ -196,8 +195,8 @@ function Page() {
                     className="object-contain"
                   />
                 </motion.div>
-                <h3 className="text-xl font-bold mb-3 text-green-900">{feature.title}</h3>
-                <p className="text-gray-600">{feature.description}</p>
+                <h3 className="text-lg sm:text-xl font-bold mb-3 text-green-900">{feature.title}</h3>
+                <p className="text-gray-600 text-sm sm:text-base">{feature.description}</p>
               </motion.div>
             ))}
           </div>
@@ -205,24 +204,24 @@ function Page() {
       </div>
 
       {/* About Project Section */}
-      <div className="py-20 px-4 bg-green-50" ref={aboutRef}>
-        <div className="max-w-6xl mx-auto">
+      <div className="py-12 sm:py-20 px-4 bg-green-50 w-full" ref={aboutRef}>
+        <div className="max-w-6xl mx-auto w-full px-4 sm:px-6">
           <motion.div 
-            className="grid grid-cols-1 md:grid-cols-2 gap-12 items-center"
+            className="grid grid-cols-1 md:grid-cols-2 gap-8 sm:gap-12 items-center"
             initial="hidden"
             animate={isAboutInView ? "visible" : "hidden"}
             variants={staggerChildren}
             transition={{ staggerChildren: 0.2 }}
           >
             <motion.div variants={slideIn} transition={{ duration: 0.7 }}>
-              <h2 className="text-3xl font-bold mb-6 text-green-900">About The Project</h2>
-              <p className="text-gray-600 mb-6">
+              <h2 className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 text-green-900">About The Project</h2>
+              <p className="text-gray-600 mb-4 sm:mb-6 text-sm sm:text-base md:text-lg">
                 Karishma Jewellery AI is an innovative solution designed to streamline inventory management 
                 and quality control processes for jewellery businesses. Using advanced computer vision 
                 and machine learning algorithms, our system can accurately detect and count various types 
                 of jewellery items from a single image.
               </p>
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-sm sm:text-base md:text-lg">
                 Whether you're managing large inventory or need precise counts for quality assurance, 
                 our tool provides fast and accurate results, saving you time and reducing human error.
               </p>
@@ -233,7 +232,7 @@ function Page() {
               transition={{ duration: 0.7 }}
             >
               <motion.div 
-                className="relative w-80 h-80 border-2 border-dashed border-green-900 rounded-2xl p-4"
+                className="relative w-56 sm:w-64 md:w-80 h-56 sm:h-64 md:h-80 border-2 border-dashed border-green-900 rounded-2xl p-4"
                 whileHover={{ 
                   scale: 1.05,
                   rotate: 2,
@@ -251,13 +250,12 @@ function Page() {
                   stiffness: 300 
                 }}
               >
-               
-                  <Image 
-                    src="/karishmaGray.svg" 
-                    alt="Jewellery Detection" 
-                    fill
-                    className="object-contain p-8"
-                  />
+                <Image 
+                  src="/karishmaGray.svg" 
+                  alt="Jewellery Detection" 
+                  fill
+                  className="object-contain p-6 sm:p-8"
+                />
               </motion.div>
             </motion.div>
           </motion.div>
@@ -265,10 +263,10 @@ function Page() {
       </div>
 
       {/* Call to Action */}
-      <div className="py-16 px-4" ref={ctaRef}>
-        <div className="max-w-6xl mx-auto text-center">
+      <div className="py-12 sm:py-16 px-4 w-full" ref={ctaRef}>
+        <div className="max-w-6xl mx-auto w-full px-4 sm:px-6">
           <motion.h2 
-            className="text-3xl font-bold mb-6 text-green-900"
+            className="text-xl sm:text-2xl md:text-3xl font-bold mb-4 sm:mb-6 text-green-900"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={isCtaInView ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
             transition={{ duration: 0.7 }}
@@ -285,7 +283,7 @@ function Page() {
               whileTap={{ scale: 0.95 }}
               className="inline-block"
             >
-              <Link href="/annotation" className="bg-green-900 text-white py-3 px-8 rounded-md text-lg font-medium hover:bg-green-800 transition-colors inline-block">
+              <Link href="/annotation" className="bg-green-900 text-white py-2 sm:py-3 px-6 sm:px-8 rounded-md text-base sm:text-lg font-medium hover:bg-green-800 transition-colors inline-block">
                 Get Started
               </Link>
             </motion.div>

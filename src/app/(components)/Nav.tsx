@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { PenSquare, Users, Settings, LogOut, User } from 'lucide-react'
+import { PenSquare, Users, Settings, LogOut, User, Lightbulb } from 'lucide-react'
 import { usePathname, useRouter } from 'next/navigation'
 import { signOutAction } from '../actions'
 import { getSupabaseBrowserClient } from '@/lib/supabase/client'
@@ -17,8 +17,8 @@ type NavItem = {
 const navItems: NavItem[] = [
   { label: 'Annotation', href: '/annotation', icon: <PenSquare size={20} /> },
   { label: 'Users', href: '/users', icon: <Users size={20} /> },
+  { label: 'Recommendations', href: '/recommendations', icon: <Lightbulb size={20} /> },
   { label: 'Settings', href: '/settings', icon: <Settings size={20} /> },
-
 ]
 
 function Nav() {
@@ -26,6 +26,8 @@ function Nav() {
   const router = useRouter()
   const [userName, setUserName] = useState<string>('')
   const [isNavVisible, setIsNavVisible] = useState(false)
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+
   const supabase = getSupabaseBrowserClient()
 
   useEffect(() => {
@@ -37,7 +39,6 @@ function Nav() {
     }
     getUserName()
     
-    // Add animation on mount
     setIsNavVisible(true)
   }, [])
 
@@ -49,7 +50,11 @@ function Nav() {
     }
   };
 
-  // Animation variants
+  // Add this function to handle link clicks
+  const handleLinkClick = () => {
+    setIsMobileMenuOpen(false)
+  }
+
   const navVariants = {
     hidden: { y: -100, opacity: 0 },
     visible: { 
@@ -90,24 +95,11 @@ function Nav() {
   return (
     <AnimatePresence>
       <motion.nav 
-        className='flex flex-row p-8 bg-[#073320] justify-between items-center text-white shadow-lg relative z-50'
+        className='flex flex-row p-4 sm:p-8 bg-[#073320] justify-between items-center text-white shadow-lg relative z-50'
         initial="hidden"
         animate={isNavVisible ? "visible" : "hidden"}
         variants={navVariants}
       >
-        {/* Animated background element */}
-        <motion.div 
-          className="absolute inset-0 bg-gradient-to-r from-[#073320] via-[#0a4a2e] to-[#073320] opacity-50 z-0"
-          animate={{ 
-            backgroundPosition: ['0% 50%', '100% 50%', '0% 50%'],
-          }}
-          transition={{ 
-            duration: 15, 
-            ease: "linear", 
-            repeat: Infinity 
-          }}
-        />
-        
         <motion.div
           variants={logoVariants}
           whileHover={{ 
@@ -117,13 +109,33 @@ function Nav() {
           transition={{ type: "spring", stiffness: 300 }}
           className="z-10"
         >
-          <Link href="/" className="hover:opacity-80">
-            <Image src="/logo.png" alt="Logo" width={200} height={200} className="" />
+          <Link href="/" className="hover:opacity-80" onClick={handleLinkClick}>
+            <Image src="/logo.png" alt="Logo" width={150} height={150} className="w-32 sm:w-[200px]" />
           </Link>
         </motion.div>
 
+        <motion.button
+          className="lg:hidden z-10 p-2 hover:bg-[#0a4a2e] rounded-md"
+          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+          whileTap={{ scale: 0.95 }}
+        >
+          <motion.div
+            animate={isMobileMenuOpen ? { rotate: 180 } : { rotate: 0 }}
+          >
+            {isMobileMenuOpen ? (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </motion.div>
+        </motion.button>
+
         <motion.div 
-          className='flex flex-row gap-10 items-center z-10'
+          className={`${isMobileMenuOpen ? 'flex' : 'hidden'} lg:flex flex-col lg:flex-row absolute lg:relative top-full left-0 right-0 lg:top-auto bg-[#073320] lg:bg-transparent p-4 lg:p-0 gap-4 lg:gap-10 items-start lg:items-center z-10`}
           variants={itemVariants}
         >
           {navItems.map((item, index) => (
@@ -137,24 +149,23 @@ function Nav() {
               }}
               whileTap={{ scale: 0.95 }}
               custom={index}
+              className="w-full lg:w-auto"
             >
               <Link 
                 href={item.href}
-                className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md transition-colors ${
+                className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md transition-colors w-full lg:w-auto ${
                   pathname === item.href 
                     ? 'bg-white text-[#073320]' 
                     : 'hover:bg-[#0a4a2e]'
                 }`}
+                onClick={handleLinkClick} // Add this line
               >
                 <motion.div
                   animate={pathname === item.href ? { 
                     rotate: [0, 10, 0],
                     scale: [1, 1.2, 1],
                   } : {}}
-                  transition={{ 
-                    duration: 0.5,
-                    ease: "easeInOut"
-                  }}
+                  transition={{ duration: 0.5, ease: "easeInOut" }}
                 >
                   {item.icon}
                 </motion.div>
@@ -163,41 +174,34 @@ function Nav() {
             </motion.div>
           ))}
           
-          {userName && (
-            <motion.div 
-              className="flex items-center gap-2 text-sm bg-[#0a4a2e] px-3 py-1.5 rounded-md"
+          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 w-full lg:w-auto">
+            {userName && (
+              <motion.div 
+                className="flex items-center gap-2 text-sm bg-[#0a4a2e] px-3 py-1.5 rounded-md w-full lg:w-auto justify-center lg:justify-start"
+                variants={itemVariants}
+                whileHover={{ scale: 1.05 }}
+              >
+                <User size={20} />
+                <span>{userName}</span>
+              </motion.div>
+            )}
+
+            <motion.button 
+              className="flex items-center gap-2 hover:bg-[#0a4a2e] text-sm font-medium px-3 py-1.5 rounded-md transition-colors w-full lg:w-auto justify-center lg:justify-start"
+              onClick={handleLogout}
               variants={itemVariants}
               whileHover={{ scale: 1.05 }}
-              animate={{ 
-                boxShadow: ['0px 0px 0px rgba(255, 255, 255, 0)', '0px 0px 4px rgba(255, 255, 255, 0.3)', '0px 0px 0px rgba(255, 255, 255, 0)']
-              }}
-              transition={{ 
-                boxShadow: {
-                  repeat: Infinity,
-                  duration: 2
-                }
-              }}
+              whileTap={{ scale: 0.95 }}
             >
-              <User size={20} />
-              <span>{userName}</span>
-            </motion.div>
-          )}
-
-          <motion.button 
-            className="flex items-center gap-2 hover:bg-[#0a4a2e] text-sm font-medium px-3 py-1.5 rounded-md transition-colors"
-            onClick={handleLogout}
-            variants={itemVariants}
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-          >
-            <motion.div
-              whileHover={{ rotate: 90 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
-              <LogOut size={20} />
-            </motion.div>
-            Logout
-          </motion.button>
+              <motion.div
+                whileHover={{ rotate: 90 }}
+                transition={{ type: "spring", stiffness: 300 }}
+              >
+                <LogOut size={20} />
+              </motion.div>
+              Logout
+            </motion.button>
+          </div>
         </motion.div>
       </motion.nav>
     </AnimatePresence>
@@ -205,4 +209,3 @@ function Nav() {
 }
 
 export default Nav
-
