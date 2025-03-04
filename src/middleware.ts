@@ -70,7 +70,7 @@ export async function middleware(request: NextRequest) {
 
     // Redirect authenticated users away from login/signup pages
     if (session && (request.nextUrl.pathname === '/login' || request.nextUrl.pathname === '/signup')) {
-      return NextResponse.redirect(new URL('/home', request.url));
+      return NextResponse.redirect(new URL('/', request.url));
     }
 
     return response;

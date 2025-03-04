@@ -6,6 +6,7 @@ import { PenSquare, Users, Settings, LogOut, User, Lightbulb } from 'lucide-reac
 import { usePathname, useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { signOutAction } from '../actions';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import { useUser } from './UserContext';
 
 interface NavItem {
@@ -22,15 +23,58 @@ const navItems: NavItem[] = [
 ];
 
 const Nav: React.FC = () => {
-  const { userData } = useUser();
+  const { userData } = useUser(); // Use context for profile picture and username
   const pathname = usePathname();
   const router = useRouter();
   const [isNavVisible, setIsNavVisible] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState<string>(''); // Local state for username
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null); // Local state for avatar
+  const supabase = getSupabaseBrowserClient();
 
   useEffect(() => {
+    const getUserData = async () => {
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setIsLoggedIn(true);
+        setUserName(user.email?.split('@')[0] || '');
+        setAvatarUrl(user.user_metadata?.avatar_url || null);
+      } else {
+        setIsLoggedIn(false);
+        setUserName('');
+        setAvatarUrl(null);
+      }
+    };
+
+    getUserData();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event);
+        if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+          if (session) {
+            setIsLoggedIn(true);
+            setUserName(session.user.email?.split('@')[0] || '');
+            setAvatarUrl(session.user.user_metadata?.avatar_url || null);
+          }
+        } else if (event === 'SIGNED_OUT') {
+          setIsLoggedIn(false);
+          setUserName('');
+          setAvatarUrl(null);
+          if (pathname !== '/') {
+            router.push('/');
+          }
+        }
+      }
+    );
+
     setIsNavVisible(true);
-  }, []);
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [pathname, router, supabase]);
 
   const handleLogout = async () => {
     try {
@@ -103,7 +147,7 @@ const Nav: React.FC = () => {
           </Link>
         </motion.div>
 
-        {userData.isLoggedIn && (
+        {isLoggedIn && (
           <motion.button
             className="lg:hidden z-10 p-2 hover:bg-[#0a4a2e] rounded-md"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -139,7 +183,7 @@ const Nav: React.FC = () => {
           className={`${isMobileMenuOpen ? 'flex' : 'hidden'} lg:flex flex-col lg:flex-row absolute lg:relative top-full left-0 right-0 lg:top-auto bg-[#073320] lg:bg-transparent p-4 lg:p-0 gap-4 lg:gap-10 items-start lg:items-center z-10`}
           variants={itemVariants}
         >
-          {userData.isLoggedIn &&
+          {isLoggedIn &&
             navItems.map((item, index) => (
               <motion.div
                 key={item.href}
@@ -172,7 +216,7 @@ const Nav: React.FC = () => {
             ))}
 
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 w-full lg:w-auto">
-            {userData.isLoggedIn ? (
+            {isLoggedIn ? (
               <>
                 {userData.email && (
                   <motion.div
