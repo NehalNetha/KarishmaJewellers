@@ -24,6 +24,7 @@ const Login = () => {
       [e.target.name]: e.target.value
     });
   };
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
@@ -40,11 +41,13 @@ const Login = () => {
         setError(message);
         toast.error(message);
       } else {
+        // Force a refresh of the router to update UI state
+        router.refresh();
+        // Navigate to home page
         router.push('/');
       }
     } catch (err) {
       setError('An error occurred during login');
-      toast.error('An error occurred during login');
     } finally {
       setLoading(false);
     }

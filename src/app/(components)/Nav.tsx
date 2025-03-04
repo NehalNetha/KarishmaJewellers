@@ -28,21 +28,56 @@ function Nav() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [isNavVisible, setIsNavVisible] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   const supabase = getSupabaseBrowserClient()
 
   useEffect(() => {
+    // Force immediate check of auth status when component mounts
     const getUserData = async () => {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
+        setIsLoggedIn(true)
         setUserName(user.email?.split('@')[0] || '')
         setAvatarUrl(user.user_metadata?.avatar_url || null)
+      } else {
+        setIsLoggedIn(false)
+        setUserName('')
+        setAvatarUrl(null)
       }
     }
+    
     getUserData()
     
+    // Add auth state change listener with more immediate response
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('Auth state changed:', event)
+        
+        if (event === 'SIGNED_IN' && session) {
+          setIsLoggedIn(true)
+          setUserName(session.user.email?.split('@')[0] || '')
+          setAvatarUrl(session.user.user_metadata?.avatar_url || null)
+        } else if (event === 'SIGNED_OUT') {
+          setIsLoggedIn(false)
+          setUserName('')
+          setAvatarUrl(null)
+          
+          // Force redirect to home page on logout
+          if (pathname !== '/') {
+            router.push('/')
+          }
+        }
+      }
+    )
+    
     setIsNavVisible(true)
-  }, [])
+    
+    // Clean up subscription when component unmounts
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [pathname, router])
 
   const handleLogout = async () => {
     try {
@@ -115,31 +150,35 @@ function Nav() {
           </Link>
         </motion.div>
 
-        <motion.button
-          className="lg:hidden z-10 p-2 hover:bg-[#0a4a2e] rounded-md"
-          onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-          whileTap={{ scale: 0.95 }}
-        >
-          <motion.div
-            animate={isMobileMenuOpen ? { rotate: 180 } : { rotate: 0 }}
+        {/* Only show hamburger menu if logged in */}
+        {isLoggedIn && (
+          <motion.button
+            className="lg:hidden z-10 p-2 hover:bg-[#0a4a2e] rounded-md"
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            whileTap={{ scale: 0.95 }}
           >
-            {isMobileMenuOpen ? (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            ) : (
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            )}
-          </motion.div>
-        </motion.button>
+            <motion.div
+              animate={isMobileMenuOpen ? { rotate: 180 } : { rotate: 0 }}
+            >
+              {isMobileMenuOpen ? (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              ) : (
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+              )}
+            </motion.div>
+          </motion.button>
+        )}
 
         <motion.div 
           className={`${isMobileMenuOpen ? 'flex' : 'hidden'} lg:flex flex-col lg:flex-row absolute lg:relative top-full left-0 right-0 lg:top-auto bg-[#073320] lg:bg-transparent p-4 lg:p-0 gap-4 lg:gap-10 items-start lg:items-center z-10`}
           variants={itemVariants}
         >
-          {navItems.map((item, index) => (
+          {/* Only show nav items if logged in */}
+          {isLoggedIn && navItems.map((item, index) => (
             <motion.div
               key={item.href}
               variants={itemVariants}
@@ -176,42 +215,51 @@ function Nav() {
           ))}
           
           <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 w-full lg:w-auto">
-            {userName && (
-              <motion.div 
-                className="flex items-center gap-2 text-sm bg-[#0a4a2e] px-3 py-1.5 rounded-md w-full lg:w-auto justify-center lg:justify-start"
-                variants={itemVariants}
-                whileHover={{ scale: 1.05 }}
-              >
-                {avatarUrl ? (
-                  <Image
-                    src={avatarUrl}
-                    alt="Profile"
-                    width={20}
-                    height={20}
-                    className="rounded-full object-cover"
-                  />
-                ) : (
-                  <User size={20} />
+            {isLoggedIn ? (
+              <>
+                {userName && (
+                  <motion.div 
+                    className="flex items-center gap-2 text-sm bg-[#0a4a2e] px-3 py-1.5 rounded-md w-full lg:w-auto justify-center lg:justify-start"
+                    variants={itemVariants}
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    {avatarUrl ? (
+                      <Image
+                        src={avatarUrl}
+                        alt="Profile"
+                        width={20}
+                        height={20}
+                        className="rounded-full object-cover"
+                      />
+                    ) : (
+                      <User size={20} />
+                    )}
+                    <span>{userName}</span>
+                  </motion.div>
                 )}
-                <span>{userName}</span>
-              </motion.div>
-            )}
 
-            <motion.button 
-              className="flex items-center gap-2 hover:bg-[#0a4a2e] text-sm font-medium px-3 py-1.5 rounded-md transition-colors w-full lg:w-auto justify-center lg:justify-start"
-              onClick={handleLogout}
-              variants={itemVariants}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <motion.div
-                whileHover={{ rotate: 90 }}
-                transition={{ type: "spring", stiffness: 300 }}
-              >
-                <LogOut size={20} />
-              </motion.div>
-              Logout
-            </motion.button>
+                <motion.button 
+                  className="flex items-center gap-2 hover:bg-[#0a4a2e] text-sm font-medium px-3 py-1.5 rounded-md transition-colors w-full lg:w-auto justify-center lg:justify-start"
+                  onClick={handleLogout}
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <motion.div
+                    whileHover={{ rotate: 90 }}
+                    transition={{ type: "spring", stiffness: 300 }}
+                  >
+                    <LogOut size={20} />
+                  </motion.div>
+                  Logout
+                </motion.button>
+              </>
+            ) : (
+              <Link href="/login" className="flex items-center gap-2 hover:bg-[#0a4a2e] text-sm font-medium px-3 py-1.5 rounded-md transition-colors">
+                <User size={20} />
+                Login
+              </Link>
+            )}
           </div>
         </motion.div>
       </motion.nav>
