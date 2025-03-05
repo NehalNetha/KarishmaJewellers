@@ -16,6 +16,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
   const [componentImages, setComponentImages] = useState<Record<string, string>>({});
   const [zipFile, setZipFile] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
+  const [confidenceThreshold, setConfidenceThreshold] = useState(0.05);
 
   const handleDelete = () => {
     setPreviewUrl(null);
@@ -31,7 +32,6 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
       
-      // Check if the file is a WebP image
       if (file.type === 'image/webp' || file.name.toLowerCase().endsWith('.webp')) {
         setError('WebP format is not supported. Please upload JPEG, JPG, or PNG images.');
         return;
@@ -41,17 +41,24 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
       const objectUrl = URL.createObjectURL(file);
       setPreviewUrl(objectUrl);
       onUpload(file);
-      processImage(file);
+      processImage(file, confidenceThreshold);
     }
-  }, [onUpload]);
+  }, [onUpload, confidenceThreshold]);
 
-  const processImage = async (file: File) => {
+  const processImage = async (file: File, threshold: number) => {
     setIsLoading(true);
     try {
       const formData = new FormData();
       formData.append('image', file);
+      formData.append('confidence', threshold.toString());
+      console.log('Sending to backend:', {
+        fileName: file.name,
+        fileType: file.type,
+        fileSize: `${(file.size / 1024).toFixed(2)} KB`,
+        confidenceThreshold: threshold
+      });
 
-      const response = await fetch('http://13.235.132.94/flask/segment', {
+      const response = await fetch('http://localhost:8080/segment', {
         method: 'POST',
         body: formData,
       });
@@ -60,7 +67,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
         const data = await response.json();
         setAnalysisData(data.analysis);
         setSegmentedImage(data.segmentedImage);
-        setComponentImages(data.componentImages);  // Now contains one image per category
+        setComponentImages(data.componentImages);
         setZipFile(data.zipFile);
         setActiveTab('annotations');
       } else {
@@ -95,17 +102,24 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
     }
   };
 
+  const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    const newValue = value / 100;
+    setConfidenceThreshold(newValue);
+    console.log('Raw slider value:', value);
+    console.log('New threshold set to:', newValue);
+  };
+
   return (
     <div className="bg-white rounded-xl px-10 max-w-6xl mx-auto mt-10">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-20">
-        {/* Left section */}
         <div>
           <h2 className="text-3xl font-bold mb-3">Detect & Count Jewels</h2>
+          
           <p className="text-gray-600 mb-8 text-lg">
             Upload a jewellery image, and our AI will count the jewels instantly.
           </p>
           
-          {/* Error message */}
           {error && (
             <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg flex items-center gap-2">
               <AlertCircle size={20} />
@@ -154,18 +168,41 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
             )}
           </div>
           
-          <div className="flex justify-center">
+          <div className="mt-6 flex flex-col md:flex-row items-center justify-between gap-4">
             <button 
               onClick={() => (document.querySelector('input[type="file"]') as HTMLInputElement)?.click()}
-              className="mt-6 bg-green-900 text-white py-2 px-6 rounded-md min-w-[128px] text-lg font-medium hover:bg-green-800 transition-colors"
+              className="bg-green-900 text-white py-2 px-6 rounded-md min-w-[128px] text-lg font-medium hover:bg-green-800 transition-colors"
               disabled={isLoading}
             >
               {isLoading ? "Processing..." : "Upload"}
             </button>
+            
+            <div className="w-full md:w-2/3 bg-gray-50 p-3 rounded-lg">
+              <div className="flex justify-between items-center mb-1">
+                <label className="text-sm font-medium text-gray-700">
+                  Detection Sensitivity
+                </label>
+                <div className="text-sm font-medium text-green-900">
+                  {confidenceThreshold.toFixed(2)}
+                </div>
+              </div>
+              <input
+                type="range"
+                min="1"
+                max="10"
+                step="1"
+                value={confidenceThreshold * 100}
+                onChange={handleSliderChange}
+                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-900"
+              />
+              <p className="text-xs text-gray-500 mt-1">
+                Lower values detect more items (0.01 - 0.10)
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Right section */}
+        {/* Right section remains unchanged */}
         <div>
           <h2 className="text-3xl font-bold mb-3">Annotated Jewellery</h2>
           <p className="text-gray-600 mb-8 text-lg">
@@ -176,7 +213,6 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
             <div className="flex-1 flex flex-col items-center justify-center w-full">
               {segmentedImage ? (
                 <>
-                  {/* Segmented Image */}
                   <div className="relative w-full max-w-md mb-6">
                     <img 
                       src={segmentedImage}
@@ -185,7 +221,6 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
                     />
                   </div>
 
-                  {/* Component Images (One per Category) */}
                   <div className="w-full max-w-md mb-6">
                     <h3 className="text-xl font-semibold mb-4 text-center">Component Categories</h3>
                     <div className="max-h-[300px] overflow-y-auto pr-2">
@@ -211,15 +246,12 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
                     </div>
                   </div>
                   
-                  {/* Analysis Data */}
                   {analysisData && (
                     <div className="text-center mt-4">
                       <p className="text-green-900 font-medium mb-2">{analysisData.message}</p>
-                      {/* Optionally remove detailed list here since it's shown with images */}
                     </div>
                   )}
 
-                  {/* Download Button */}
                   <button
                     onClick={handleDownload}
                     className="mt-6 bg-green-900 text-white py-2 px-6 rounded-md text-lg font-medium hover:bg-green-800 transition-colors"
@@ -241,7 +273,6 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
         </div>
       </div>
 
-      {/* Progress Steps */}
       <div className="mt-12 flex justify-center items-center">
         <div className="flex items-center gap-3">
           <div className="flex flex-col items-center">
