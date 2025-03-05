@@ -12,6 +12,15 @@ type User = {
   email: string;
   role: string;
   created_at: string;
+  name?: string;
+  surname?: string;
+  avatar_url?: string;
+  user_metadata?: {
+    name?: string;
+    surname?: string;
+    avatar_url?: string;
+    role?: string;
+  };
 }
 
 const UserList = () => {
@@ -38,8 +47,16 @@ const UserList = () => {
       if (!response.ok) {
         throw new Error(data.error);
       }
-
-      setUsers(data.users);
+    
+      // Map the users to include metadata
+      const usersWithMetadata = data.users.map((user: User) => ({
+        ...user,
+        name: user.user_metadata?.name || '',
+        surname: user.user_metadata?.surname || '',
+        avatar_url: user.user_metadata?.avatar_url || '',
+      }));
+    
+      setUsers(usersWithMetadata);
     } catch (error) {
       console.error('Error fetching users:', error);
     } finally {
@@ -102,9 +119,24 @@ const UserList = () => {
           >
             <div className="flex items-center gap-3 sm:gap-4 w-full sm:w-auto">
               <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full overflow-hidden bg-gray-200 flex items-center justify-center text-sm sm:text-base">
-                {user.email[0].toUpperCase()}
+                {user.avatar_url ? (
+                  <Image
+                    src={user.avatar_url}
+                    alt={`${user.name || user.email}'s avatar`}
+                    width={48}
+                    height={48}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  user.email[0].toUpperCase()
+                )}
               </div>
               <div className="min-w-0 flex-1 sm:flex-none">
+                {(user.name || user.surname) && (
+                  <p className="text-sm font-medium truncate">
+                    {[user.name, user.surname].filter(Boolean).join(' ')}
+                  </p>
+                )}
                 <p className="text-sm text-gray-600 truncate">{user.email}</p>
                 <p className="text-xs text-gray-400">
                   Joined {new Date(user.created_at).toLocaleDateString()}

@@ -15,7 +15,12 @@ export async function GET() {
       id: user.id,
       email: user.email || '',
       role: user.user_metadata?.role || 'USER',
-      created_at: user.created_at
+      created_at: user.created_at,
+      // Add metadata fields
+      name: user.user_metadata?.name,
+      surname: user.user_metadata?.surname,
+      avatar_url: user.user_metadata?.avatar_url,
+      user_metadata: user.user_metadata  // Include full metadata
     }));
 
     return NextResponse.json({ users: formattedUsers });

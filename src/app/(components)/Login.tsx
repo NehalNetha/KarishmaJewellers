@@ -7,6 +7,8 @@ import { useRouter } from 'next/navigation';
 import bgTexture from '../../../public/texture.jpeg';
 import { signInAction } from '../actions';
 import toast from 'react-hot-toast';
+import { useUser } from './UserContext';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 const Login = () => {
   const router = useRouter();
@@ -25,6 +27,9 @@ const Login = () => {
     });
   };
 
+  const { setUserData } = useUser();
+  const supabase = getSupabaseBrowserClient();
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setLoading(true);
@@ -41,9 +46,30 @@ const Login = () => {
         setError(message);
         toast.error(message);
       } else {
-        // Force a refresh of the router to update UI state
+        // Clear previous user data first
+        setUserData({
+          name: '',
+          surname: '',
+          email: '',
+          avatarUrl: null,
+          isLoggedIn: false,
+        });
+
+        // Fetch fresh user data after successful login
+        const { data: { user }, error: userError } = await supabase.auth.getUser();
+        if (userError) throw userError;
+        
+        if (user) {
+          setUserData({
+            name: user.user_metadata.name || '',
+            surname: user.user_metadata.surname || '',
+            email: user.email || '',
+            avatarUrl: user.user_metadata.avatar_url || null,
+            isLoggedIn: true,
+          });
+        }
+        
         router.refresh();
-        // Navigate to home page
         router.push('/');
       }
     } catch (err) {

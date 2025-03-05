@@ -29,8 +29,7 @@ const Nav: React.FC = () => {
   const [isNavVisible, setIsNavVisible] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState<string>(''); // Local state for username
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(null); // Local state for avatar
+  // REMOVED LOCAL STATE FOR USERNAME AND AVATAR
   const supabase = getSupabaseBrowserClient();
 
   useEffect(() => {
@@ -38,12 +37,9 @@ const Nav: React.FC = () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user) {
         setIsLoggedIn(true);
-        setUserName(user.email?.split('@')[0] || '');
-        setAvatarUrl(user.user_metadata?.avatar_url || null);
+        // REMOVED LOCAL STATE UPDATES FOR USERNAME/AVATAR
       } else {
         setIsLoggedIn(false);
-        setUserName('');
-        setAvatarUrl(null);
       }
     };
 
@@ -55,13 +51,10 @@ const Nav: React.FC = () => {
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
           if (session) {
             setIsLoggedIn(true);
-            setUserName(session.user.email?.split('@')[0] || '');
-            setAvatarUrl(session.user.user_metadata?.avatar_url || null);
+            // REMOVED LOCAL STATE UPDATES
           }
         } else if (event === 'SIGNED_OUT') {
           setIsLoggedIn(false);
-          setUserName('');
-          setAvatarUrl(null);
           if (pathname !== '/') {
             router.push('/');
           }
@@ -133,6 +126,7 @@ const Nav: React.FC = () => {
         animate={isNavVisible ? 'visible' : 'hidden'}
         variants={navVariants}
       >
+        {/* Logo */}
         <motion.div
           variants={logoVariants}
           whileHover={{
@@ -147,124 +141,138 @@ const Nav: React.FC = () => {
           </Link>
         </motion.div>
 
-        {isLoggedIn && (
-          <motion.button
-            className="lg:hidden z-10 p-2 hover:bg-[#0a4a2e] rounded-md"
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            whileTap={{ scale: 0.95 }}
-          >
-            <motion.div animate={isMobileMenuOpen ? { rotate: 180 } : { rotate: 0 }}>
-              {isMobileMenuOpen ? (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              ) : (
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-6 w-6"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-                </svg>
-              )}
-            </motion.div>
-          </motion.button>
-        )}
-
-        <motion.div
-          className={`${isMobileMenuOpen ? 'flex' : 'hidden'} lg:flex flex-col lg:flex-row absolute lg:relative top-full left-0 right-0 lg:top-auto bg-[#073320] lg:bg-transparent p-4 lg:p-0 gap-4 lg:gap-10 items-start lg:items-center z-10`}
-          variants={itemVariants}
-        >
-          {isLoggedIn &&
-            navItems.map((item, index) => (
-              <motion.div
-                key={item.href}
-                variants={itemVariants}
-                whileHover={{ y: -2, scale: 1.05, transition: { type: 'spring', stiffness: 400 } }}
-                whileTap={{ scale: 0.95 }}
-                custom={index}
-                className="w-full lg:w-auto"
-              >
-                <Link
-                  href={item.href}
-                  className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md transition-colors w-full lg:w-auto ${
-                    pathname === item.href ? 'bg-white text-[#073320]' : 'hover:bg-[#0a4a2e]'
-                  }`}
-                  onClick={handleLinkClick}
-                >
-                  <motion.div
-                    animate={
-                      pathname === item.href
-                        ? { rotate: [0, 10, 0], scale: [1, 1.2, 1] }
-                        : {}
-                    }
-                    transition={{ duration: 0.5, ease: 'easeInOut' }}
+        {/* Right Side: Mobile Menu Toggle or Login Link */}
+        <div className="flex items-center">
+          {isLoggedIn ? (
+            <motion.button
+              className="lg:hidden z-10 p-2 hover:bg-[#0a4a2e] rounded-md"
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              whileTap={{ scale: 0.95 }}
+            >
+              <motion.div animate={isMobileMenuOpen ? { rotate: 180 } : { rotate: 0 }}>
+                {isMobileMenuOpen ? (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
                   >
-                    {item.icon}
-                  </motion.div>
-                  {item.label}
-                </Link>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-6 w-6"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
               </motion.div>
-            ))}
+            </motion.button>
+          ) : (
+            <Link
+              href="/login"
+              className="flex items-center gap-2 hover:bg-[#0a4a2e] text-sm font-medium px-3 py-1.5 rounded-md transition-colors z-10 lg:hidden"
+            >
+              <User size={20} />
+              Login
+            </Link>
+          )}
 
-          <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 w-full lg:w-auto">
-            {isLoggedIn ? (
-              <>
-                {userData.email && (
-                  <motion.div
-                    className="flex items-center gap-2 text-sm bg-[#0a4a2e] px-3 py-1.5 rounded-md w-full lg:w-auto justify-center lg:justify-start"
+          {/* Navigation Items and User Info (Desktop + Mobile Menu) */}
+          <motion.div
+            className={`${
+              isLoggedIn ? (isMobileMenuOpen ? 'flex' : 'hidden') : 'hidden'
+            } lg:flex flex-col lg:flex-row absolute lg:relative top-full left-0 right-0 lg:top-auto bg-[#073320] lg:bg-transparent p-4 lg:p-0 gap-4 lg:gap-10 items-start lg:items-center z-10`}
+            variants={itemVariants}
+          >
+            {isLoggedIn &&
+              navItems.map((item, index) => (
+                <motion.div
+                  key={item.href}
+                  variants={itemVariants}
+                  whileHover={{ y: -2, scale: 1.05, transition: { type: 'spring', stiffness: 400 } }}
+                  whileTap={{ scale: 0.95 }}
+                  custom={index}
+                  className="w-full lg:w-auto"
+                >
+                  <Link
+                    href={item.href}
+                    className={`flex items-center gap-2 text-sm font-medium px-4 py-2 rounded-md transition-colors w-full lg:w-auto ${
+                      pathname === item.href ? 'bg-white text-[#073320]' : 'hover:bg-[#0a4a2e]'
+                    }`}
+                    onClick={handleLinkClick}
+                  >
+                    <motion.div
+                      animate={
+                        pathname === item.href
+                          ? { rotate: [0, 10, 0], scale: [1, 1.2, 1] }
+                          : {}
+                      }
+                      transition={{ duration: 0.5, ease: 'easeInOut' }}
+                    >
+                      {item.icon}
+                    </motion.div>
+                    {item.label}
+                  </Link>
+                </motion.div>
+              ))}
+
+            <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 w-full lg:w-auto">
+              {isLoggedIn ? (
+                <>
+                  {userData.email && (
+                    <motion.div
+                      className="flex items-center gap-2 text-sm bg-[#0a4a2e] px-3 py-1.5 rounded-md w-full lg:w-auto justify-center lg:justify-start"
+                      variants={itemVariants}
+                      whileHover={{ scale: 1.05 }}
+                    >
+                      {userData.avatarUrl ? (
+                        <Image
+                          src={userData.avatarUrl}
+                          alt="Profile"
+                          width={20}
+                          height={20}
+                          className="rounded-full object-cover"
+                        />
+                      ) : (
+                        <User size={20} />
+                      )}
+                      <span>{userData.name || userData.email.split('@')[0]}</span>
+                    </motion.div>
+                  )}
+                  <motion.button
+                    className="flex items-center gap-2 hover:bg-[#0a4a2e] text-sm font-medium px-3 py-1.5 rounded-md transition-colors w-full lg:w-auto justify-center lg:justify-start"
+                    onClick={handleLogout}
                     variants={itemVariants}
                     whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    {userData.avatarUrl ? (
-                      <Image
-                        src={userData.avatarUrl}
-                        alt="Profile"
-                        width={20}
-                        height={20}
-                        className="rounded-full object-cover"
-                      />
-                    ) : (
-                      <User size={20} />
-                    )}
-                    <span>{userData.email.split('@')[0]}</span>
-                  </motion.div>
-                )}
-                <motion.button
-                  className="flex items-center gap-2 hover:bg-[#0a4a2e] text-sm font-medium px-3 py-1.5 rounded-md transition-colors w-full lg:w-auto justify-center lg:justify-start"
-                  onClick={handleLogout}
-                  variants={itemVariants}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
+                    <motion.div
+                      whileHover={{ rotate: 90 }}
+                      transition={{ type: 'spring', stiffness: 300 }}
+                    >
+                      <LogOut size={20} />
+                    </motion.div>
+                    Logout
+                  </motion.button>
+                </>
+              ) : (
+                <Link
+                  href="/login"
+                  className="flex items-center gap-2 hover:bg-[#0a4a2e] text-sm font-medium px-3 py-1.5 rounded-md transition-colors w-full lg:w-auto hidden lg:flex"
                 >
-                  <motion.div
-                    whileHover={{ rotate: 90 }}
-                    transition={{ type: 'spring', stiffness: 300 }}
-                  >
-                    <LogOut size={20} />
-                  </motion.div>
-                  Logout
-                </motion.button>
-              </>
-            ) : (
-              <Link
-                href="/login"
-                className="flex items-center gap-2 hover:bg-[#0a4a2e] text-sm font-medium px-3 py-1.5 rounded-md transition-colors"
-              >
-                <User size={20} />
-                Login
-              </Link>
-            )}
-          </div>
-        </motion.div>
+                  <User size={20} />
+                  Login
+                </Link>
+              )}
+            </div>
+          </motion.div>
+        </div>
       </motion.nav>
     </AnimatePresence>
   );

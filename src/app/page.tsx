@@ -157,7 +157,7 @@ function Page() {
               {
                 title: "Upload Image",
                 description: "Upload a high-quality image of your jewellery collection or individual pieces.",
-                icon: "/cloud.svg"
+                icon: "/Cloud.svg"
               },
               {
                 title: "AI Processing",
@@ -167,7 +167,7 @@ function Page() {
               {
                 title: "Download Results",
                 description: "Get detailed annotations and counts of all jewellery items in your image.",
-                icon: "/cloud.svg"
+                icon: "/Cloud.svg"
               }
             ].map((feature, index) => (
               <motion.div 

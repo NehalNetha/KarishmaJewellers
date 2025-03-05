@@ -1,10 +1,11 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { Pencil, Trash2, ImageIcon, Lock } from 'lucide-react';
+import { Pencil, Trash2, ImageIcon, Lock, AlertTriangle } from 'lucide-react';
 import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 import toast from 'react-hot-toast';
 import { useUser } from './UserContext';
+import { useRouter } from 'next/navigation';
 
 interface FormData {
   name: string;
@@ -22,6 +23,7 @@ interface PasswordData {
 const Settings: React.FC = () => {
   const { userData, setUserData } = useUser();
   const [loading, setLoading] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [avatarFile, setAvatarFile] = useState<File | null>(null);
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -29,16 +31,62 @@ const Settings: React.FC = () => {
     email: '',
     avatar_url: '',
   });
+  const [showPasswordSection, setShowPasswordSection] = useState(false);
+  const [passwordData, setPasswordData] = useState<PasswordData>({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+
+  // State for account deletion
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deleteConfirmText, setDeleteConfirmText] = useState('');
+
   const supabase = getSupabaseBrowserClient();
+  const router = useRouter();
 
   useEffect(() => {
-    setFormData({
-      name: userData.name,
-      surname: userData.surname,
-      email: userData.email,
-      avatar_url: userData.avatarUrl || '',
-    });
-  }, [userData]);
+    const initializeUserData = async () => {
+      // Fetch fresh user data
+      const { data: { user }, error } = await supabase.auth.getUser();
+      
+      if (error) {
+        console.error('Error fetching user:', error);
+        return;
+      }
+
+      if (user) {
+        setFormData({
+          name: user.user_metadata.name || '',
+          surname: user.user_metadata.surname || '',
+          email: user.email || '',
+          avatar_url: user.user_metadata.avatar_url || '',
+        });
+        
+        // Update UserContext data as well
+        setUserData({
+          name: user.user_metadata.name || '',
+          surname: user.user_metadata.surname || '',
+          email: user.email || '',
+          avatarUrl: user.user_metadata.avatar_url || null,
+          isLoggedIn: true,
+        });
+      }
+      
+      setIsInitialized(true);
+    };
+
+    initializeUserData();
+  }, [supabase, setUserData]);
+
+  if (!isInitialized) {
+    return (
+      <div className="p-16 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-[#073320] border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({
@@ -107,12 +155,6 @@ const Settings: React.FC = () => {
     setUserData((prev) => ({ ...prev, avatarUrl: null }));
   };
 
-  const [showPasswordSection, setShowPasswordSection] = useState(false);
-  const [passwordData, setPasswordData] = useState<PasswordData>({
-    currentPassword: '',
-    newPassword: '',
-    confirmPassword: '',
-  });
 
   const handlePasswordChange = async () => {
     if (passwordData.newPassword !== passwordData.confirmPassword) {
@@ -142,14 +184,85 @@ const Settings: React.FC = () => {
     }
   };
 
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText.toLowerCase() !== 'delete my account') {
+      toast.error('Please type "delete my account" to confirm');
+      return;
+    }
+
+    setLoading(true);
+    try {
+      console.log('Starting account deletion process');
+      
+      // Optional: Clean up user data (e.g., delete avatar from storage)
+      if (userData.avatarUrl) {
+        const fileName = userData.avatarUrl.split('/').pop();
+        console.log(`Attempting to remove avatar: ${fileName}`);
+        try {
+          await supabase.storage.from('avatars').remove([fileName || '']);
+          console.log('Avatar removed successfully');
+        } catch (avatarError) {
+          console.error('Error removing avatar:', avatarError);
+          // Continue with account deletion even if avatar removal fails
+        }
+      }
+      
+      // Get the user ID from the session
+      const { data: sessionData } = await supabase.auth.getSession();
+      const userId = sessionData?.session?.user?.id;
+      
+      if (!userId) {
+        throw new Error('Could not determine user ID from session');
+      }
+      
+      console.log(`Sending delete request for user ID: ${userId}`);
+      
+      // Call the API route to delete the account
+      const response = await fetch('/api/delete-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        console.error('API response error:', responseData);
+        throw new Error(responseData.error || 'Failed to delete account');
+      }
+      
+      console.log('Account deletion API response:', responseData);
+      
+      // Sign out the user after successful deletion
+      await supabase.auth.signOut();
+      
+      toast.success('Account deleted successfully');
+      setUserData({
+        name: '',
+        surname: '',
+        email: '',
+        avatarUrl: null,
+        isLoggedIn: false,
+      });
+      router.push('/'); // Redirect to homepage
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      toast.error(`Failed to delete account: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    } finally {
+      setLoading(false);
+      setShowDeleteConfirm(false);
+      setDeleteConfirmText('');
+    }
+  };
+
   return (
-    <div className="p-16">
-      <h1 className="text-3xl font-semibold">Settings</h1>
-      <p className="text-gray-500 mt-2 mb-12">Manage your account settings and preferences</p>
+    <div className="p-4 md:p-16">
+      <h1 className="text-2xl md:text-3xl font-semibold">Settings</h1>
+      <p className="text-gray-500 mt-2 mb-8 md:mb-12">Manage your account settings and preferences</p>
 
       <div className="space-y-8">
-        <div className="flex gap-16">
-          <div className="w-1/4">
+        <div className="flex flex-col md:flex-row md:gap-16">
+          <div className="w-full md:w-1/4 mb-6 md:mb-0">
             <h2 className="text-xl font-semibold">Profile</h2>
             <p className="text-gray-500 mt-2">Set your account details</p>
           </div>
@@ -157,7 +270,7 @@ const Settings: React.FC = () => {
           <div className="flex-1">
             <div className="grid grid-cols-1 lg:grid-cols-[2fr,1fr] gap-8">
               <div className="space-y-6">
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">Name</label>
                     <input
@@ -191,11 +304,12 @@ const Settings: React.FC = () => {
                     onChange={handleChange}
                     className="w-full p-2 border rounded-md border-gray-300 focus:border-[#073320] focus:ring-1 focus:ring-[#073320] outline-none"
                     placeholder="Enter your email address"
+                    disabled // Email is typically not editable via auth.updateUser
                   />
                 </div>
               </div>
 
-              <div className="flex flex-col items-center">
+              <div className="flex flex-col items-center mt-6 lg:mt-0">
                 <div className="relative group">
                   <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-[#073320] shadow-lg relative">
                     {formData.avatar_url ? (
@@ -266,9 +380,9 @@ const Settings: React.FC = () => {
         </div>
       </div>
 
-      <div className="space-y-8 mt-12 border-t pt-12">
-        <div className="flex gap-16">
-          <div className="w-1/4">
+      <div className="space-y-8 mt-8 md:mt-12 border-t pt-8 md:pt-12">
+        <div className="flex flex-col md:flex-row md:gap-16">
+          <div className="w-full md:w-1/4 mb-6 md:mb-0">
             <h2 className="text-xl font-semibold flex items-center gap-2">
               <Lock size={20} />
               Security
@@ -337,6 +451,52 @@ const Settings: React.FC = () => {
                 </button>
               </div>
             )}
+
+            <div className="mt-8">
+              <button
+                onClick={() => setShowDeleteConfirm(!showDeleteConfirm)}
+                className="text-red-500 hover:text-red-700 font-medium"
+              >
+                Delete Account
+              </button>
+
+              {showDeleteConfirm && (
+                <div className="mt-4 space-y-4 p-4 border border-red-300 rounded-md bg-red-50">
+                  <div className="flex items-start sm:items-center gap-2 text-red-700">
+                    <AlertTriangle size={20} className="flex-shrink-0 mt-1 sm:mt-0" />
+                    <p className="font-medium">This action cannot be undone.</p>
+                  </div>
+                  <p className="text-sm text-gray-600">
+                    Type <strong>"delete my account"</strong> to confirm.
+                  </p>
+                  <input
+                    type="text"
+                    value={deleteConfirmText}
+                    onChange={(e) => setDeleteConfirmText(e.target.value)}
+                    className="w-full p-2 border rounded-md border-gray-300 focus:border-red-500 focus:ring-1 focus:ring-red-500 outline-none"
+                    placeholder="delete my account"
+                  />
+                  <div className="flex gap-4">
+                    <button
+                      onClick={() => {
+                        setShowDeleteConfirm(false);
+                        setDeleteConfirmText('');
+                      }}
+                      className="px-4 py-2 border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleDeleteAccount}
+                      className="px-4 py-2 bg-red-500 text-white rounded-md hover:bg-red-700 transition-colors disabled:opacity-50"
+                      disabled={loading}
+                    >
+                      {loading ? 'Deleting...' : 'Delete Account'}
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </div>
