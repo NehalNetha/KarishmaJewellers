@@ -9,7 +9,6 @@ const page = (props: Props) => {
 
         const handleDownloadRecommendations = () => {
           // Implement download functionality here
-          console.log("Downloading recommendations...");
           // For example:
           // - Create a download link
           // - Trigger a download API call
@@ -20,7 +19,6 @@ const page = (props: Props) => {
           const file = event.target.files?.[0];
           if (file) {
             setSelectedImage(file);
-            console.log("Image uploaded:", file.name);
           }
         };
         

@@ -192,15 +192,12 @@ const Settings: React.FC = () => {
 
     setLoading(true);
     try {
-      console.log('Starting account deletion process');
       
       // Optional: Clean up user data (e.g., delete avatar from storage)
       if (userData.avatarUrl) {
         const fileName = userData.avatarUrl.split('/').pop();
-        console.log(`Attempting to remove avatar: ${fileName}`);
         try {
           await supabase.storage.from('avatars').remove([fileName || '']);
-          console.log('Avatar removed successfully');
         } catch (avatarError) {
           console.error('Error removing avatar:', avatarError);
           // Continue with account deletion even if avatar removal fails
@@ -215,7 +212,6 @@ const Settings: React.FC = () => {
         throw new Error('Could not determine user ID from session');
       }
       
-      console.log(`Sending delete request for user ID: ${userId}`);
       
       // Call the API route to delete the account
       const response = await fetch('/api/delete-account', {
@@ -231,7 +227,6 @@ const Settings: React.FC = () => {
         throw new Error(responseData.error || 'Failed to delete account');
       }
       
-      console.log('Account deletion API response:', responseData);
       
       // Sign out the user after successful deletion
       await supabase.auth.signOut();

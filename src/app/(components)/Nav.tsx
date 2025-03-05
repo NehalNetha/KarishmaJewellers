@@ -23,38 +23,71 @@ const navItems: NavItem[] = [
 ];
 
 const Nav: React.FC = () => {
-  const { userData } = useUser(); // Use context for profile picture and username
+  const { userData, setUserData } = useUser();
   const pathname = usePathname();
   const router = useRouter();
   const [isNavVisible, setIsNavVisible] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  // REMOVED LOCAL STATE FOR USERNAME AND AVATAR
+  const [isLoading, setIsLoading] = useState(true);
   const supabase = getSupabaseBrowserClient();
 
+  // Load user data on component mount
   useEffect(() => {
     const getUserData = async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        setIsLoggedIn(true);
-        // REMOVED LOCAL STATE UPDATES FOR USERNAME/AVATAR
-      } else {
-        setIsLoggedIn(false);
+      setIsLoading(true);
+      try {
+        const { data: { user } } = await supabase.auth.getUser();
+        
+        if (user) {
+          // Update user data in context if user exists
+          setUserData({
+            name: user.user_metadata.name || '',
+            surname: user.user_metadata.surname || '',
+            email: user.email || '',
+            avatarUrl: user.user_metadata.avatar_url || null,
+            isLoggedIn: true,
+          });
+        } else {
+          // Clear user data if no user
+          setUserData({
+            name: '',
+            surname: '',
+            email: '',
+            avatarUrl: null,
+            isLoggedIn: false,
+          });
+        }
+      } catch (error) {
+        console.error('Error fetching user data:', error);
+      } finally {
+        setIsLoading(false);
       }
     };
 
     getUserData();
 
+    // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('Auth state changed:', event);
         if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-          if (session) {
-            setIsLoggedIn(true);
-            // REMOVED LOCAL STATE UPDATES
+          if (session?.user) {
+            setUserData({
+              name: session.user.user_metadata.name || '',
+              surname: session.user.user_metadata.surname || '',
+              email: session.user.email || '',
+              avatarUrl: session.user.user_metadata.avatar_url || null,
+              isLoggedIn: true,
+            });
           }
         } else if (event === 'SIGNED_OUT') {
-          setIsLoggedIn(false);
+          setUserData({
+            name: '',
+            surname: '',
+            email: '',
+            avatarUrl: null,
+            isLoggedIn: false,
+          });
+          
           if (pathname !== '/') {
             router.push('/');
           }
@@ -67,11 +100,19 @@ const Nav: React.FC = () => {
     return () => {
       subscription.unsubscribe();
     };
-  }, [pathname, router, supabase]);
+  }, [supabase, setUserData, pathname, router]);
 
   const handleLogout = async () => {
     try {
+      setUserData({
+        name: '',
+        surname: '',
+        email: '',
+        avatarUrl: null,
+        isLoggedIn: false,
+      });
       await signOutAction();
+      
     } catch (error) {
       console.error('Logout failed:', error);
     }
@@ -143,7 +184,7 @@ const Nav: React.FC = () => {
 
         {/* Right Side: Mobile Menu Toggle or Login Link */}
         <div className="flex items-center">
-          {isLoggedIn ? (
+          {userData.isLoggedIn ? (
             <motion.button
               className="lg:hidden z-10 p-2 hover:bg-[#0a4a2e] rounded-md"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -186,11 +227,11 @@ const Nav: React.FC = () => {
           {/* Navigation Items and User Info (Desktop + Mobile Menu) */}
           <motion.div
             className={`${
-              isLoggedIn ? (isMobileMenuOpen ? 'flex' : 'hidden') : 'hidden'
+              userData.isLoggedIn ? (isMobileMenuOpen ? 'flex' : 'hidden') : 'hidden'
             } lg:flex flex-col lg:flex-row absolute lg:relative top-full left-0 right-0 lg:top-auto bg-[#073320] lg:bg-transparent p-4 lg:p-0 gap-4 lg:gap-10 items-start lg:items-center z-10`}
             variants={itemVariants}
           >
-            {isLoggedIn &&
+            {userData.isLoggedIn &&
               navItems.map((item, index) => (
                 <motion.div
                   key={item.href}
@@ -223,7 +264,7 @@ const Nav: React.FC = () => {
               ))}
 
             <div className="flex flex-col lg:flex-row gap-4 lg:gap-6 w-full lg:w-auto">
-              {isLoggedIn ? (
+              {userData.isLoggedIn ? (
                 <>
                   {userData.email && (
                     <motion.div

@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { motion, useScroll, useTransform, useInView } from 'framer-motion'
 
 function Page() {
+
   const [isLoaded, setIsLoaded] = useState(false)
   const heroRef = useRef(null)
   const featuresRef = useRef(null)

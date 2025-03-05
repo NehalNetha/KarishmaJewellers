@@ -8,7 +8,6 @@ function page({}: Props) {
   const handleUpload = (file: File) => {
     // We don't need to do anything here as the ImageUpload component
     // now handles the API call and processing directly
-    console.log('File uploaded:', file.name);
   }
 
 

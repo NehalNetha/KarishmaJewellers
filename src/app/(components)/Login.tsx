@@ -69,8 +69,6 @@ const Login = () => {
           });
         }
         
-        router.refresh();
-        router.push('/');
       }
     } catch (err) {
       setError('An error occurred during login');
