@@ -103,7 +103,7 @@ const Login = () => {
 
           <form className="space-y-6" onSubmit={handleSubmit}>
             {error && (
-              <div className="bg-red-50 text-red-500 p-3 rounded-md text-sm">
+              <div className="bg-red-50 text-green-500 p-3 rounded-md text-sm">
                 {error}
               </div>
             )}
