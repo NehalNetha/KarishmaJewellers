@@ -92,7 +92,14 @@ const Login = () => {
    
       <div className="flex-1 flex items-center justify-center mb-[10rem]">
         <div className="bg-white rounded-3xl px-8 py-4 w-full max-w-md mx-4">
-          <div className="mb-6">
+          <div className="flex flex-col items-center mb-6">
+            <Image 
+              src="/rlogo.svg" 
+              alt="Logo" 
+              width={80} 
+              height={80} 
+              className="mb-4"
+            />
             <h1 className="text-2xl font-semibold">Welcome back</h1>
           </div>
 

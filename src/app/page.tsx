@@ -54,40 +54,14 @@ function Page() {
       {/* Hero Section */}
       <motion.div 
         ref={heroRef}
-        className="bg-gradient-to-b from-green-50 to-white py-12 sm:py-20 px-4 relative w-full overflow-hidden" // Added overflow-hidden
+        className="bg-gradient-to-b from-green-50 to-white py-12 sm:py-20 px-4 relative w-full overflow-hidden"
         initial="hidden"
         animate={isLoaded ? "visible" : "hidden"}
         variants={staggerChildren}
         transition={{ staggerChildren: 0.2 }}
         style={{ y: heroY, opacity: heroOpacity }}
       >
-        {/* Animated background elements - Contained within parent */}
-        <motion.div 
-          className="absolute top-20 left-4 sm:left-10 w-20 h-20 rounded-full bg-green-100 opacity-30"
-          animate={{ 
-            x: [0, 10, 0], // Reduced movement range
-            y: [0, 20, 0],
-            scale: [1, 1.2, 1]
-          }}
-          transition={{ 
-            repeat: Infinity, 
-            duration: 15,
-            ease: "easeInOut" 
-          }}
-        />
-        <motion.div 
-          className="absolute bottom-20 right-4 sm:right-10 w-24 h-24 rounded-full bg-green-100 opacity-20" // Reduced size
-          animate={{ 
-            x: [0, -10, 0], // Reduced movement range
-            y: [0, -15, 0],
-            scale: [1, 1.1, 1]
-          }}
-          transition={{ 
-            repeat: Infinity, 
-            duration: 20,
-            ease: "easeInOut" 
-          }}
-        />
+        {/* Removed the animated background circles */}
         
         <div className="max-w-6xl mx-auto w-full px-4 sm:px-6">
           <motion.div 
@@ -162,12 +136,12 @@ function Page() {
               {
                 title: "AI Processing",
                 description: "Our advanced AI model detects and counts individual jewels with high precision.",
-                icon: "/karishmaGray.svg"
+                icon: "/rlogo.svg"
               },
               {
                 title: "Download Results",
                 description: "Get detailed annotations and counts of all jewellery items in your image.",
-                icon: "/Cloud.svg"
+                icon: "/download.png"
               }
             ].map((feature, index) => (
               <motion.div 
@@ -251,7 +225,7 @@ function Page() {
                 }}
               >
                 <Image 
-                  src="/karishmaGray.svg" 
+                  src="/rlogo.svg" 
                   alt="Jewellery Detection" 
                   fill
                   className="object-contain p-6 sm:p-8"

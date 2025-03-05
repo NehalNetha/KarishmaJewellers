@@ -1,6 +1,6 @@
 import Image from 'next/image';
 import React, { useState, useCallback } from 'react';
-import { CircleCheck, X } from 'lucide-react';
+import { CircleCheck, X, AlertCircle } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 
 type ImageUploadProps = {
@@ -15,6 +15,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
   const [segmentedImage, setSegmentedImage] = useState<string | null>(null);
   const [componentImages, setComponentImages] = useState<Record<string, string>>({});
   const [zipFile, setZipFile] = useState<any>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const handleDelete = () => {
     setPreviewUrl(null);
@@ -23,11 +24,20 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
     setSegmentedImage(null);
     setComponentImages({});
     setZipFile(null);
+    setError(null);
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
       const file = acceptedFiles[0];
+      
+      // Check if the file is a WebP image
+      if (file.type === 'image/webp' || file.name.toLowerCase().endsWith('.webp')) {
+        setError('WebP format is not supported. Please upload JPEG, JPG, or PNG images.');
+        return;
+      }
+      
+      setError(null);
       const objectUrl = URL.createObjectURL(file);
       setPreviewUrl(objectUrl);
       onUpload(file);
@@ -95,7 +105,15 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
             Upload a jewellery image, and our AI will count the jewels instantly.
           </p>
           
-          <div {...getRootProps()} className="border-2 border-dashed border-gray-300 rounded-2xl px-12 flex flex-col items-center justify-center min-h-[400px] cursor-pointer hover:border-green-900 transition-colors">
+          {/* Error message */}
+          {error && (
+            <div className="mb-4 p-3 bg-red-50 text-red-600 rounded-lg flex items-center gap-2">
+              <AlertCircle size={20} />
+              <span>{error}</span>
+            </div>
+          )}
+          
+          <div {...getRootProps()} className={`border-2 border-dashed ${error ? 'border-red-400' : 'border-gray-300'} rounded-2xl px-12 flex flex-col items-center justify-center min-h-[400px] cursor-pointer hover:border-green-900 transition-colors`}>
             <input {...getInputProps()} />
             {previewUrl ? (
               <div className="relative">
@@ -128,6 +146,9 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
                 <p className="text-gray-700 text-lg mt-4">
                   {isDragActive ? "Drop the image here" : "Drop your image here, or "} 
                   <span className="text-green-900 font-medium">browse</span>
+                </p>
+                <p className="text-gray-500 text-sm mt-2">
+                  Supported formats: JPEG, JPG, PNG
                 </p>
               </>
             )}

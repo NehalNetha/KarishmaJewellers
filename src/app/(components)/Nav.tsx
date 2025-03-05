@@ -264,7 +264,7 @@ const Nav: React.FC = () => {
               ) : (
                 <Link
                   href="/login"
-                  className="flex items-center gap-2 hover:bg-[#0a4a2e] text-sm font-medium px-3 py-1.5 rounded-md transition-colors w-full lg:w-auto hidden lg:flex"
+                  className=" items-center gap-2 hover:bg-[#0a4a2e] text-sm font-medium px-3 py-1.5 rounded-md transition-colors w-full lg:w-auto hidden lg:flex"
                 >
                   <User size={20} />
                   Login
