@@ -74,7 +74,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
           console.log(`Retry attempt ${retryCount} of ${maxRetries}...`);
         }
 
-        const response = await fetch('http://65.0.26.66/flask/segment', {
+        const response = await fetch('http://localhost:8080/segment', {
           method: 'POST',
           body: formData,
         });
@@ -230,7 +230,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
             ) : (
               <>
                 <Image 
-                  src="/Cloud.svg" 
+                  src="/cloud.svg" 
                   alt="Logo" 
                   width={250}
                   height={250}
