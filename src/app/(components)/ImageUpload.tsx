@@ -47,6 +47,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
 
   const processImage = async (file: File, threshold: number) => {
     setIsLoading(true);
+    setError(null);
     try {
       const formData = new FormData();
       formData.append('image', file);
@@ -58,26 +59,50 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
         confidenceThreshold: threshold
       });
 
-      const response = await fetch('http://localhost:8080/segment', {
+      const response = await fetch('http://65.0.26.66/flask/segment', {
         method: 'POST',
         body: formData,
+       
       });
 
+      // Check if response is ok (status in the range 200-299)
       if (response.ok) {
-        const data = await response.json();
-        setAnalysisData(data.analysis);
-        setSegmentedImage(data.segmentedImage);
-        setComponentImages(data.componentImages);
-        setZipFile(data.zipFile);
-        setActiveTab('annotations');
+        // Try to parse the response as JSON
+        const contentType = response.headers.get('content-type');
+        if (contentType && contentType.includes('application/json')) {
+          const data = await response.json();
+          setAnalysisData(data.analysis);
+          setSegmentedImage(data.segmentedImage);
+          setComponentImages(data.componentImages);
+          setZipFile(data.zipFile);
+          setActiveTab('annotations');
+        } else {
+          // Not JSON response
+          const text = await response.text();
+          console.error('Server returned non-JSON response:', text.substring(0, 100) + '...');
+          setError('Server returned an invalid response format. Please try again later.');
+        }
       } else {
-        const errorData = await response.json();
-        console.error('Error processing image:', errorData);
-        alert('Error processing image. Please try again.');
+        // Handle specific HTTP error codes
+        if (response.status === 502) {
+          console.error('Bad Gateway error. The server might be down or unreachable.');
+          setError('Cannot connect to the analysis server. Please try again later or contact support.');
+        } else {
+          try {
+            const errorData = await response.json();
+            console.error('Error processing image:', errorData);
+            setError(`Error processing image: ${errorData.message || 'Unknown error'}`);
+          } catch (jsonError) {
+            // If we can't parse the error as JSON, get the text
+            const errorText = await response.text();
+            console.error('Error response (not JSON):', errorText.substring(0, 100) + '...');
+            setError(`Server error (${response.status}). Please try again later.`);
+          }
+        }
       }
     } catch (error) {
       console.error('Error uploading image:', error);
-      alert('Error uploading image. Please try again.');
+      setError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
     } finally {
       setIsLoading(false);
     }
@@ -211,7 +236,12 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
           
           <div className="border-2 border-dashed border-gray-300 rounded-2xl p-12 flex flex-col items-center justify-between min-h-[400px]">
             <div className="flex-1 flex flex-col items-center justify-center w-full">
-              {segmentedImage ? (
+              {isLoading ? (
+                <div className="flex flex-col items-center">
+                  <div className="w-12 h-12 border-4 border-gray-200 border-t-green-900 rounded-full animate-spin"></div>
+                  <p className="mt-4 text-gray-600 font-medium">Processing Image...</p>
+                </div>
+              ) : segmentedImage ? (
                 <>
                   <div className="relative w-full max-w-md mb-6">
                     <img 
