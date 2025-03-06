@@ -74,7 +74,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
           console.log(`Retry attempt ${retryCount} of ${maxRetries}...`);
         }
 
-        const response = await fetch('http://localhost:8080/segment', {
+        const response = await fetch('http://65.0.26.66/flask/segment', {
           method: 'POST',
           body: formData,
         });
