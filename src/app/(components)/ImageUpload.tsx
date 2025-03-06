@@ -16,7 +16,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
   const [componentImages, setComponentImages] = useState<Record<string, string>>({});
   const [zipFile, setZipFile] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
-  const [confidenceThreshold, setConfidenceThreshold] = useState(0.05);
+  const [confidenceThreshold, setConfidenceThreshold] = useState(0.25); // Changed from 0.05
   const [currentFile, setCurrentFile] = useState<File | null>(null);
   
   const handleDelete = () => {
@@ -52,64 +52,108 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
   const processImage = async (file: File, threshold: number) => {
     setIsLoading(true);
     setError(null);
-    try {
-      const formData = new FormData();
-      formData.append('image', file);
-      formData.append('confidence', threshold.toString());
-      console.log('Sending to backend:', {
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: `${(file.size / 1024).toFixed(2)} KB`,
-        confidenceThreshold: threshold
-      });
-
-      const response = await fetch('http://65.0.26.66/flask/segment', {
-        method: 'POST',
-        body: formData,
-       
-      });
-
-      // Check if response is ok (status in the range 200-299)
-      if (response.ok) {
-        // Try to parse the response as JSON
-        const contentType = response.headers.get('content-type');
-        if (contentType && contentType.includes('application/json')) {
-          const data = await response.json();
-          setAnalysisData(data.analysis);
-          setSegmentedImage(data.segmentedImage);
-          setComponentImages(data.componentImages);
-          setZipFile(data.zipFile);
-          setActiveTab('annotations');
+    
+    let retryCount = 0;
+    const maxRetries = 5;
+    let success = false;
+    
+    while (retryCount < maxRetries && !success) {
+      try {
+        const formData = new FormData();
+        formData.append('image', file);
+        formData.append('confidence', threshold.toString());
+        
+        if (retryCount === 0) {
+          console.log('Sending to backend:', {
+            fileName: file.name,
+            fileType: file.type,
+            fileSize: `${(file.size / 1024).toFixed(2)} KB`,
+            confidenceThreshold: threshold
+          });
         } else {
-          // Not JSON response
-          const text = await response.text();
-          console.error('Server returned non-JSON response:', text.substring(0, 100) + '...');
-          setError('Server returned an invalid response format. Please try again later.');
+          console.log(`Retry attempt ${retryCount} of ${maxRetries}...`);
         }
-      } else {
-        // Handle specific HTTP error codes
-        if (response.status === 502) {
-          console.error('Bad Gateway error. The server might be down or unreachable.');
-          setError('Cannot connect to the analysis server. Please try again later or contact support.');
+
+        const response = await fetch('http://65.0.26.66/flask/segment', {
+          method: 'POST',
+          body: formData,
+        });
+
+        // Check if response is ok (status in the range 200-299)
+        if (response.ok) {
+          // Try to parse the response as JSON
+          const contentType = response.headers.get('content-type');
+          if (contentType && contentType.includes('application/json')) {
+            const data = await response.json();
+            setAnalysisData(data.analysis);
+            setSegmentedImage(data.segmentedImage);
+            setComponentImages(data.componentImages);
+            setZipFile(data.zipFile);
+            setActiveTab('annotations');
+            success = true;
+          } else {
+            // Not JSON response
+            const text = await response.text();
+            console.error('Server returned non-JSON response:', text.substring(0, 100) + '...');
+            
+            if (retryCount === maxRetries - 1) {
+              setError('Server returned an invalid response format. Please try again later.');
+            }
+            
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+          }
         } else {
-          try {
-            const errorData = await response.json();
-            console.error('Error processing image:', errorData);
-            setError(`Error processing image: ${errorData.message || 'Unknown error'}`);
-          } catch (jsonError) {
-            // If we can't parse the error as JSON, get the text
-            const errorText = await response.text();
-            console.error('Error response (not JSON):', errorText.substring(0, 100) + '...');
-            setError(`Server error (${response.status}). Please try again later.`);
+          // Handle specific HTTP error codes
+          if (response.status === 502) {
+            console.error('Bad Gateway error. The server might be down or unreachable.');
+            
+            if (retryCount === maxRetries - 1) {
+              setError('Cannot connect to the analysis server. Please try again later or contact support.');
+            }
+            
+            // Wait before retrying
+            await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+          } else {
+            try {
+              const errorData = await response.json();
+              console.error('Error processing image:', errorData);
+              
+              if (retryCount === maxRetries - 1) {
+                setError(`Error processing image: ${errorData.message || 'Unknown error'}`);
+              }
+              
+              // Wait before retrying
+              await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+            } catch (jsonError) {
+              // If we can't parse the error as JSON, get the text
+              const errorText = await response.text();
+              console.error('Error response (not JSON):', errorText.substring(0, 100) + '...');
+              
+              if (retryCount === maxRetries - 1) {
+                setError(`Server error (${response.status}). Please try again later.`);
+              }
+              
+              // Wait before retrying
+              await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
+            }
           }
         }
+      } catch (error) {
+        console.error(`Error uploading image (attempt ${retryCount + 1}):`, error);
+        
+        if (retryCount === maxRetries - 1) {
+          setError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+        
+        // Wait before retrying with exponential backoff
+        await new Promise(resolve => setTimeout(resolve, 1000 * (retryCount + 1)));
       }
-    } catch (error) {
-      console.error('Error uploading image:', error);
-      setError(`Network error: ${error instanceof Error ? error.message : 'Unknown error'}`);
-    } finally {
-      setIsLoading(false);
+      
+      retryCount++;
     }
+    
+    setIsLoading(false);
   };
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
@@ -133,7 +177,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = parseInt(e.target.value);
-    const newValue = value / 100;
+    const newValue = value / 10; // Changed from value / 100
     setConfidenceThreshold(newValue);
   };
 
@@ -226,12 +270,12 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
                 min="1"
                 max="10"
                 step="1"
-                value={confidenceThreshold * 100}
+                value={confidenceThreshold * 10} // Changed from * 100
                 onChange={handleSliderChange}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-900"
               />
               <p className="text-xs text-gray-500 mt-1">
-                Lower values detect more items (0.01 - 0.10)
+                Lower values detect more items (0.1 - 1.0) {/* Updated range */}
               </p>
             </div>
           </div>
