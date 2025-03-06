@@ -132,7 +132,7 @@ function Page() {
               {
                 title: "Upload Image",
                 description: "Upload a high-quality image of your jewellery collection or individual pieces.",
-                icon: "/cloud.svg"
+                icon: "/cloudNew.svg"
               },
               {
                 title: "AI Processing",

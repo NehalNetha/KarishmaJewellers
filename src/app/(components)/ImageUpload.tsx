@@ -230,7 +230,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
             ) : (
               <>
                 <Image 
-                  src="/cloud.svg" 
+                  src="/cloudNew.svg" 
                   alt="Logo" 
                   width={250}
                   height={250}
