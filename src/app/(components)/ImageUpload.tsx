@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { CircleCheck, X, AlertCircle } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
 
@@ -17,7 +17,8 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
   const [zipFile, setZipFile] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.05);
-
+  const [currentFile, setCurrentFile] = useState<File | null>(null);
+  
   const handleDelete = () => {
     setPreviewUrl(null);
     setActiveTab('upload');
@@ -26,6 +27,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
     setComponentImages({});
     setZipFile(null);
     setError(null);
+    setCurrentFile(null);
   };
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
@@ -40,6 +42,8 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
       setError(null);
       const objectUrl = URL.createObjectURL(file);
       setPreviewUrl(objectUrl);
+      setCurrentFile(file);
+      
       onUpload(file);
       processImage(file, confidenceThreshold);
     }
@@ -131,9 +135,15 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
     const value = parseInt(e.target.value);
     const newValue = value / 100;
     setConfidenceThreshold(newValue);
-    console.log('Raw slider value:', value);
-    console.log('New threshold set to:', newValue);
   };
+
+  // Add effect to reprocess image when threshold changes
+  useEffect(() => {
+    // Only reprocess if we have a file and we're not in the initial render
+    if (currentFile && previewUrl) {
+      processImage(currentFile, confidenceThreshold);
+    }
+  }, [confidenceThreshold]);
 
   return (
     <div className="bg-white rounded-xl px-10 max-w-6xl mx-auto mt-10">
