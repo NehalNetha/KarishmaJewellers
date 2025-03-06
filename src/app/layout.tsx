@@ -18,6 +18,10 @@ const geistMono = Geist_Mono({
 export const metadata: Metadata = {
   title: "Karishma Jeweller",
   description: "AI jewellery detection app by Karishma Jeweller",
+  icons: {
+    icon: '/rlogo.svg',
+    apple: '/rlogo.svg',
+  },
 };
 
 export default function RootLayout({
