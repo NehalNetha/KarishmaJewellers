@@ -2,6 +2,7 @@ import Image from 'next/image';
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { CircleCheck, X, AlertCircle } from 'lucide-react';
 import { useDropzone } from 'react-dropzone';
+import { getSupabaseBrowserClient } from '@/lib/supabase/client';
 
 type ImageUploadProps = {
   onUpload: (file: File) => void;
@@ -18,7 +19,8 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
   const [error, setError] = useState<string | null>(null);
   const [confidenceThreshold, setConfidenceThreshold] = useState(0.25); // Changed from 0.05
   const [currentFile, setCurrentFile] = useState<File | null>(null);
-  
+  const supabase = getSupabaseBrowserClient();
+
   const handleDelete = () => {
     setPreviewUrl(null);
     setActiveTab('upload');
@@ -29,6 +31,17 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
     setError(null);
     setCurrentFile(null);
   };
+
+  useEffect(() => {
+
+    const some = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const token = session?.access_token;
+      return token;
+      
+    }
+
+  }, [])
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     if (acceptedFiles.length > 0) {
@@ -48,7 +61,6 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
       processImage(file, confidenceThreshold);
     }
   }, [onUpload, confidenceThreshold]);
-
   const processImage = async (file: File, threshold: number) => {
     setIsLoading(true);
     setError(null);
@@ -56,6 +68,9 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
     let retryCount = 0;
     const maxRetries = 5;
     let success = false;
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
     
     while (retryCount < maxRetries && !success) {
       try {
@@ -63,20 +78,20 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
         formData.append('image', file);
         formData.append('confidence', threshold.toString());
         
-        if (retryCount === 0) {
-          console.log('Sending to backend:', {
-            fileName: file.name,
-            fileType: file.type,
-            fileSize: `${(file.size / 1024).toFixed(2)} KB`,
-            confidenceThreshold: threshold
-          });
-        } else {
-          console.log(`Retry attempt ${retryCount} of ${maxRetries}...`);
+      
+        if (!token) {
+          setError('You must be logged in to use this feature');
+          setIsLoading(false);
+          return;
         }
+        
 
         const response = await fetch('http://65.0.26.66/flask/segment', {
           method: 'POST',
           body: formData,
+          headers: {
+            'Authorization': `Bearer ${token}` // Add the authorization header
+          },
         });
 
         // Check if response is ok (status in the range 200-299)
