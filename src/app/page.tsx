@@ -256,6 +256,9 @@ function Page() {
           </motion.div>
         </div>
       </div>
+
+      {/* Footer */}
+     
     </div>
   )
 }
