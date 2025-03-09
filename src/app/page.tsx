@@ -70,31 +70,22 @@ function Page() {
             variants={fadeIn}
             transition={{ duration: 0.6 }}
           >
-            <motion.div
-              whileHover={{ rotate: 5, scale: 1.05 }}
-              transition={{ type: "spring", stiffness: 300 }}
-            >
+           
               <Image 
-                src="/karishmaGray.svg" 
-                alt="Karishma Jewellery Logo" 
-                width={140} 
-                height={140} 
-                className="mb-6 sm:mb-8 w-32 sm:w-44" // Responsive width
+                src="/logoGreen.svg" 
+                alt="Logo" 
+                width={300} 
+                height={300} 
+                className="mb-6 sm:mb-8 " // Responsive width
               />
-            </motion.div>
-            <motion.h1 
-              className="text-2xl sm:text-4xl md:text-5xl font-bold text-green-900 mb-4 sm:mb-6"
-              variants={popUp}
-              transition={{ duration: 0.7 }}
-            >
-              Karishma Jewellery
-            </motion.h1>
+              
+          
             <motion.p 
               className="text-base sm:text-lg md:text-xl text-gray-600 max-w-2xl px-4"
               variants={fadeIn}
               transition={{ duration: 0.8, delay: 0.3 }}
             >
-              Advanced AI-powered jewellery detection and counting system for inventory management and quality control.
+              Advanced AI-powered jewellery detection.
             </motion.p>
           </motion.div>
 
