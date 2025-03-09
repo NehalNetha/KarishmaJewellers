@@ -78,12 +78,22 @@ const UserList = () => {
     fetchUsers(); // Refresh the list
   };
 
-  const handleDeleteUser = async (userId: string) => {
+  const handleDeleteUser = async (userEmail: string) => {
     if (!confirm('Are you sure you want to delete this user?')) return;
     
     try {
-      const response = await fetch(`/api/users/${userId}`, {
-        method: 'DELETE',
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('Not authenticated');
+      }
+  
+      const response = await fetch('/api/delete-account', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        body: JSON.stringify({ email: userEmail }),
       });
       
       if (!response.ok) {
@@ -91,11 +101,11 @@ const UserList = () => {
         throw new Error(data.error || 'Failed to delete user');
       }
     
-      setUsers(prev => prev.filter(user => user.id !== userId));
+      setUsers(prev => prev.filter(user => user.email !== userEmail));
       toast.success('User deleted successfully');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error deleting user:', error);
-      toast.error('Failed to delete user');
+      toast.error(error.message || 'Failed to delete user');
     }
   };
 
@@ -108,9 +118,9 @@ const UserList = () => {
       <h1 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">User List</h1>
       
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
-        {users.map((user) => (
+        {users.map((user, index) => (
           <div 
-            key={user.id}
+            key={user.id || user.email || index}
             className={`flex flex-col sm:flex-row items-start sm:items-center justify-between rounded-lg p-3 sm:p-4 sm:pr-6 space-y-2 sm:space-y-0 ${
               user.role === 'ADMIN' 
                 ? 'border-2 border-[#073320] bg-white' 
@@ -150,7 +160,7 @@ const UserList = () => {
               </span>
               {user.role !== 'ADMIN' && (
                 <button 
-                  onClick={() => handleDeleteUser(user.id)}
+                  onClick={() => handleDeleteUser(user.email)}
                   className="text-red-500 hover:text-red-600 transition-colors p-1 sm:p-0"
                 >
                   <X size={18} className="sm:w-5 sm:h-5" />

@@ -12,15 +12,15 @@ export async function GET() {
     }
 
     const formattedUsers = users.map(user => ({
-      id: user.id,
+      // Remove id from the response
       email: user.email || '',
       role: user.user_metadata?.role || 'USER',
       created_at: user.created_at,
-      // Add metadata fields
+      // Metadata fields
       name: user.user_metadata?.name,
       surname: user.user_metadata?.surname,
       avatar_url: user.user_metadata?.avatar_url,
-      user_metadata: user.user_metadata  // Include full metadata
+      user_metadata: user.user_metadata
     }));
 
     return NextResponse.json({ users: formattedUsers });
