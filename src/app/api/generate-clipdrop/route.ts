@@ -87,7 +87,7 @@ export async function POST(req: Request) {
     const clipDropResponse = await fetch('https://clipdrop-api.co/reimagine/v1/reimagine', {
       method: 'POST',
       headers: {
-        'x-api-key': process.env.CLIPDROP_API_KEY || '895e2787f649149bc3e60a169b2f846e0b022fa490b294bb6d3326a03a525b43e3be3e36198cebd944286e036f232dd1'
+        'x-api-key': process.env.CLIPDROP_API_KEY || '',
       },
       body: formData
     });
