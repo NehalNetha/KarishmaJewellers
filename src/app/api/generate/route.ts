@@ -32,7 +32,7 @@ export async function POST(req: Request) {
     console.log('Authenticated user:', session.user.email);
     
     // Continue with the existing functionality
-    const { imageUrl, prompt = "Generate different style variations of this image" } = await req.json();
+    const { imageUrl, prompt = "Generate different style variations of this necklace while keeping its original design intact. Maintain the same structure, shape, and overall look, but explore subtle variations in materials, textures, patterns, and artistic details. Experiment with different metal finishes, gemstone settings, engravings, or cultural influences, but do not alter the core design significantly." } = await req.json();
     
     if (!imageUrl) {
       console.error('No image provided');
@@ -52,7 +52,7 @@ export async function POST(req: Request) {
       image: imageUrl,
       prompt,
       num_outputs: 2,
-      num_inference_steps: 25,
+      num_inference_steps: 60,
       scheduler: "DDIM",
       width: 512,
       height: 512,
@@ -60,7 +60,7 @@ export async function POST(req: Request) {
     };
     
     const prediction = await replicate.predictions.create({
-      version: "39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b",
+      version: "stability-ai/stable-diffusion-3",
       input
     });
     

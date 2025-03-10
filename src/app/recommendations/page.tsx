@@ -53,25 +53,24 @@ const page = (props: Props) => {
       // Convert the File to a base64 string
       const base64Image = await fileToBase64(selectedImage);
       
-      // Call the API to generate images
-      const response = await fetch('/api/generate', {
+      // Call the ClipDrop API endpoint instead of the regular generate endpoint
+      const response = await fetch('/api/generate-clipdrop', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          imageUrl: base64Image,
-          prompt: "Generate different jewelry style variations of this image"
+          imageUrl: base64Image
         }),
       });
-
-      
+    
       const data = await response.json();
-
-      console.log("replicate data response: ", data)
+    
+      console.log("clipdrop data response: ", data)
       
-      if (response.ok) {
-        setGeneratedImages(data.result);
+      if (response.ok && data.success) {
+        // ClipDrop returns a single image, so we need to put it in an array
+        setGeneratedImages([data.result]);
       } else {
         console.error('Error generating images:', data.error);
         alert('Failed to generate images. Please try again.');
