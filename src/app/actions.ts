@@ -66,12 +66,15 @@ export const forgotPasswordAction = async (formData: FormData) => {
   const origin = (await headers()).get("origin");
   const callbackUrl = formData.get("callbackUrl")?.toString();
 
+  // Use production URL if available, fallback to origin
+  const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || origin || 'http://65.0.26.66';
+
   if (!email) {
     return encodedRedirect("error", "/forgot-password", "Email is required");
   }
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${origin}/auth/callback?redirect_to=/reset-password`,
+    redirectTo: `${baseUrl}/auth/callback?redirect_to=/reset-password`,
   });
 
   if (error) {
