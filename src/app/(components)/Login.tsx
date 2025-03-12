@@ -150,8 +150,16 @@ const Login = () => {
             >
               {loading ? 'Logging in...' : 'Login'}
             </button>
-
-        
+ 
+            {/* Add this block after the submit button */}
+            <div className="text-center mt-4">
+              <Link 
+                href="/forgot-password" 
+                className="text-sm text-[#073320] hover:underline"
+              >
+                Forgot your password?
+              </Link>
+            </div>
           </form>
         </div>
       </div>
