@@ -271,28 +271,7 @@ const ImageUpload = ({ onUpload }: ImageUploadProps) => {
               {isLoading ? "Processing..." : "Upload"}
             </button>
             
-            <div className="w-full md:w-2/3 bg-gray-50 p-3 rounded-lg">
-              <div className="flex justify-between items-center mb-1">
-                <label className="text-sm font-medium text-gray-700">
-                  Detection Sensitivity
-                </label>
-                <div className="text-sm font-medium text-green-900">
-                  {confidenceThreshold.toFixed(2)}
-                </div>
-              </div>
-              <input
-                type="range"
-                min="1"
-                max="10"
-                step="1"
-                value={confidenceThreshold * 10} // Changed from * 100
-                onChange={handleSliderChange}
-                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-green-900"
-              />
-              <p className="text-xs text-gray-500 mt-1">
-                Lower values detect more items (0.1 - 1.0) {/* Updated range */}
-              </p>
-            </div>
+            
           </div>
         </div>
 

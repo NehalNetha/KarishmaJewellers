@@ -18,7 +18,6 @@ interface NavItem {
 const navItems: NavItem[] = [
   { label: 'Annotation', href: '/annotation', icon: <PenSquare size={20} /> },
   { label: 'Users', href: '/users', icon: <Users size={20} /> },
-  { label: 'Recommendations', href: '/recommendations', icon: <Lightbulb size={20} /> },
   { label: 'Settings', href: '/settings', icon: <Settings size={20} /> },
 ];
 
